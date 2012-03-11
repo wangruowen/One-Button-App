@@ -1,0 +1,157 @@
+/*
+   Copyright 2001-2004 The Apache Software Foundation
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+/* ============================================== */
+/* XDOC 1.4 */
+
+#banner, #banner td { 
+  background: #fff;
+  color: #000;
+  border: 0px;
+}
+#banner td { 
+  height: 100%;
+  vertical-align: middle;
+}
+div#banner { 
+  border: 0px;
+}
+#bodycol h3 {
+  padding: 4px 4px 4px 6px;
+  border: 1px solid #999;
+  color: #000;
+  background-color: #aaf;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: bold;
+}
+#bodycol h4 {
+  padding: 4px 4px 4px 6px;
+  border: 1px solid #999;
+  color: #000;
+  background-color: #ccf;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: normal;
+}
+.app h3, .app h4, .tabs td, .tabs th, .functnbar {
+  background-image: none;
+}
+
+
+/* ============================================== */
+/* XDOC 1.5 */
+
+/* Controls font size on left */
+body, td, th, select, input, li{
+  font-family: Verdana, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+}
+/* Logo position */
+#organizationLogo img, #projectLogo img {
+  position: static;
+  clear: both;
+} 
+#organizationLogo img {
+  margin-top: 20px;
+} 
+#projectLogo img {
+  margin-top: 5px;
+} 
+
+/* Hyperlinks */
+a {
+  text-decoration: none;
+}
+a:link {
+  color:#44f;
+}
+a:visited  {
+  color:#47a;
+}
+#navcolumn a:visited, #breadcrumbs a:visited {
+  color:#44f;
+}
+a:active, a:hover {
+  color:#69c;
+}
+
+/* Titles */
+h2 {
+  padding: 4px 4px 4px 6px;
+  border: 1px solid #999;
+  color: #000;
+  background-color: #aaf;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: bold;
+}
+h3 {
+  padding: 4px 4px 4px 6px;
+  border: 1px solid #999;
+  color: #000;
+  background-color: #ccf;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  font-weight: normal;
+}
+#bodycolumn p, #bodycolumn ul, #bodycolumn ol, #bodycolumn dl, #bodycolumn table {
+  margin-top: .67em;
+  margin-bottom: .67em;
+  font-size: 13px;
+}
+#breadcrumbs {
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
+  background-color: #ccc;
+}
+#leftColumn {
+  margin: 0 0 0 0;
+  width: 19%;
+  border-right: 1px solid #999;
+  border-bottom: 1px solid #999;
+  background-color: #eee;
+}
+#navcolumn h5 {
+   font-size: smaller;
+   border-bottom: 1px solid #aaaaaa;
+   padding-top: 2px;
+}
+
+table.bodyTable {
+  border: 1px solid #000;
+}
+table.bodyTable th {
+  color: white;
+  background-color: #bbb;
+  text-align: left;
+  font-weight: bold;
+}
+table.bodyTable tr.a {
+  background-color: #ddd;
+}
+table.bodyTable tr.b {
+  background-color: #eee;
+}
+
+.source {
+  border: 1px solid #999;
+}
+
