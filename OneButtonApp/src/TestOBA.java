@@ -230,9 +230,9 @@ public class TestOBA {
 		String term = "/usr/bin/gnome-terminal";
 		// In order to automatic use ssh to login, we need "sshpass" to provide
 		// the password to the shell
-		String ssh_command = "sshpass -p " + conn_data[2]
-				+ " ssh -o StrictHostKeyChecking=no " + conn_data[1] + "@"
-				+ conn_data[0];
+		String ssh_command = "expect -c 'set password " + conn_data[2] + 
+				"; spawn ssh -o StrictHostKeyChecking=no " + conn_data[1] + "@" + conn_data[0] + "; expect assword; send \"$password\r\"; interact'";
+
 		System.out.println(ssh_command);
 
 		// Using string array is due to the requirement of the argument accepted
