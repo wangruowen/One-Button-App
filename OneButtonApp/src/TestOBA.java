@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -7,8 +6,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
-
-import javax.naming.spi.DirStateFactory.Result;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.XmlRpcRequest;
@@ -20,6 +17,12 @@ import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
 import org.apache.xmlrpc.client.XmlRpcTransport;
 
 public class TestOBA {
+	public enum Platform {
+		Windows, Linux, Mac, Android, iPhone, iPad
+	}
+
+	private Platform client_plat;
+
 	private String username;
 
 	private String password;
@@ -28,9 +31,11 @@ public class TestOBA {
 
 	private XmlRpcClient client;
 
-	public TestOBA(final String username, final String password) {
+	public TestOBA(final String username, final String password,
+			Platform client_plat) {
 		this.username = username;
 		this.password = password;
+		this.client_plat = client_plat;
 		this.activeRequests = new ArrayList<Integer>();
 
 		XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
@@ -106,7 +111,11 @@ public class TestOBA {
 
 	private boolean makeReservation() {
 		String[] params = new String[3];
-		int image_id = 2422; // VCL2.2.1 SandBox image id 
+		int image_id = 2422; // VCL2.2.1 SandBox image id 2422
+		/*
+		 * {id=2813, name=centos_tunnel_main_campus} {id=1913,
+		 * name=centos_tunnel_mcnc}
+		 */
 
 		params[0] = Integer.toString(image_id);
 		params[1] = "now";
@@ -136,11 +145,12 @@ public class TestOBA {
 						System.out
 								.println("The reservation is still loading with "
 										+ remain_time + " minutes remained...");
-						// Wait for half of the remaining time and then check again. 
+						// Wait for half of the remaining time and then check
+						// again.
 						if (remain_time <= 1) {
 							TimeUnit.SECONDS.sleep(30);
-						} else {							
-							TimeUnit.MINUTES.sleep((int)(remain_time / 2));
+						} else {
+							TimeUnit.MINUTES.sleep((int) (remain_time / 2));
 						}
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
@@ -227,17 +237,39 @@ public class TestOBA {
 	}
 
 	private void termLaunch(String[] conn_data) {
-		String term = "/usr/bin/gnome-terminal";
+		String term = null, ssh_command = null;
 		// In order to automatic use ssh to login, we need "sshpass" to provide
 		// the password to the shell
-		String ssh_command = "expect -c 'set password " + conn_data[2] + 
-				"; spawn ssh -o StrictHostKeyChecking=no " + conn_data[1] + "@" + conn_data[0] + "; expect assword; send \"$password\r\"; interact'";
+		String[] commands = null;
+		switch (this.client_plat) {
+		case Windows:
+			term = "./putty.exe";
+			ssh_command = conn_data[1] + "@" + conn_data[0];
+			commands = new String[] { term, "-ssh", ssh_command, "-pw",
+					conn_data[2] };
+			break;
+		case Linux:
+			term = "/usr/bin/gnome-terminal";
+			ssh_command = "expect -c 'set password " + conn_data[2]
+					+ "; spawn ssh -o StrictHostKeyChecking=no " + conn_data[1]
+					+ "@" + conn_data[0]
+					+ "; expect assword; send \"$password\r\"; interact'";
+			commands = new String[] { term, "-e", ssh_command };
+			break;
+		case Mac:
+			ssh_command = "osascript";
+			break;
+		case Android:
 
+			break;
+
+		default:
+			break;
+		}
 		System.out.println(ssh_command);
 
 		// Using string array is due to the requirement of the argument accepted
 		// by rt.exec.
-		String[] commands = new String[] { term, "-e", ssh_command};
 		Runtime rt = Runtime.getRuntime();
 		try {
 			System.out.println("Now launch the terminal");
@@ -249,16 +281,18 @@ public class TestOBA {
 	}
 
 	public static void main(String[] args) {
-		TestOBA oba = new TestOBA(args[0], args[1]);
-				
-//		 oba.getImageID();		
+		Platform platform = TestOBA.Platform.Windows;
+		TestOBA oba = new TestOBA(args[0], args[1], platform);
+
+		// oba.getImageID();
 		if (oba.makeReservation()) {
 			String[] conn_data = oba.getConnectData();
 
 			// Now launch a Linux terminal to SSH to the reserved machine.
 			try {
-				// Wait for a short time between getConnectData and termLaunch, since the VCL needs time to process
-				// remote IP in its firewall. 
+				// Wait for a short time between getConnectData and termLaunch,
+				// since the VCL needs time to process
+				// remote IP in its firewall.
 				Thread.sleep(4000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
