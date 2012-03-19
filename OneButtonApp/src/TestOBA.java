@@ -1,4 +1,10 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -111,7 +117,7 @@ public class TestOBA {
 
 	private boolean makeReservation() {
 		String[] params = new String[3];
-		int image_id = 2422; // VCL2.2.1 SandBox image id 2422
+		int image_id = 2813; // VCL2.2.1 SandBox image id 2422
 		/*
 		 * {id=2813, name=centos_tunnel_main_campus} {id=1913,
 		 * name=centos_tunnel_mcnc}
@@ -257,7 +263,35 @@ public class TestOBA {
 			commands = new String[] { term, "-e", ssh_command };
 			break;
 		case Mac:
-			ssh_command = "osascript";
+			// Too many nested script commands, the single/double quotes get
+			// mixed together, we have to write the entire script to a file,
+			// and use osascript to execute this script file.
+			String script = "tell app \"Terminal\"\nActivate\ndo script ";
+			script += "\"expect -c 'set password "
+					+ conn_data[2]
+					+ "; spawn ssh -o StrictHostKeyChecking=no "
+					+ conn_data[1]
+					+ "@"
+					+ conn_data[0]
+					+ "; expect assword; send \\\"$password\\r\\\"; interact'\"\n";
+			script += "end tell";
+			try {
+				Writer script_file = new OutputStreamWriter(
+						new FileOutputStream("tmp_script"), "UTF-8");
+				script_file.write(script);
+				script_file.close();
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			commands = new String[] { "osascript", "tmp_script" };
 			break;
 		case Android:
 
@@ -266,7 +300,7 @@ public class TestOBA {
 		default:
 			break;
 		}
-		System.out.println(ssh_command);
+		// System.out.println(ssh_command);
 
 		// Using string array is due to the requirement of the argument accepted
 		// by rt.exec.
@@ -274,7 +308,17 @@ public class TestOBA {
 		try {
 			System.out.println("Now launch the terminal");
 			rt.exec(commands);
+
+			// Delete the temp script file if it exists
+			Thread.sleep(1000);
+			File tmp_script = new File("tmp_script");
+			if (tmp_script.exists()) {
+				tmp_script.delete();
+			}
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
