@@ -21,22 +21,31 @@ public class TestOBA {
 		Windows, Linux, Mac, Android, iPhone, iPad
 	}
 
+	private int image_id;
+
 	private Platform client_plat;
 
 	private String username;
 
 	private String password;
 
+	private String startTime;
+
+	private String duration;
+
 	private ArrayList<Integer> activeRequests;
 
 	private XmlRpcClient client;
 
-	public TestOBA(final String username, final String password,
-			Platform client_plat) {
+	public TestOBA(int image_id, final String username, final String password,
+			Platform client_plat, String startTime, String duration) {
+		this.image_id = image_id;
 		this.username = username;
 		this.password = password;
 		this.client_plat = client_plat;
 		this.activeRequests = new ArrayList<Integer>();
+		this.startTime = startTime;
+		this.duration = duration;
 
 		XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
 		try {
@@ -111,15 +120,15 @@ public class TestOBA {
 
 	private boolean makeReservation() {
 		String[] params = new String[3];
-		int image_id = 2422; // VCL2.2.1 SandBox image id 2422
+		// VCL2.2.1 SandBox image id 2422
 		/*
 		 * {id=2813, name=centos_tunnel_main_campus} {id=1913,
 		 * name=centos_tunnel_mcnc}
 		 */
 
 		params[0] = Integer.toString(image_id);
-		params[1] = "now";
-		params[2] = Integer.toString(60); // Resever for one hour
+		params[1] = startTime;
+		params[2] = duration; // Resever for one hour
 
 		HashMap result = (HashMap) xmlRPCcall("XMLRPCaddRequest", params);
 
@@ -280,13 +289,12 @@ public class TestOBA {
 		}
 	}
 
-	public static void main(String[] args) {
-		Platform platform = TestOBA.Platform.Windows;
-		TestOBA oba = new TestOBA(args[0], args[1], platform);
+	public void start() {
+		// TestOBA oba = new TestOBA(args[0], args[1], platform);
 
 		// oba.getImageID();
-		if (oba.makeReservation()) {
-			String[] conn_data = oba.getConnectData();
+		if (makeReservation()) {
+			String[] conn_data = getConnectData();
 
 			// Now launch a Linux terminal to SSH to the reserved machine.
 			try {
@@ -298,7 +306,7 @@ public class TestOBA {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			oba.termLaunch(conn_data);
+			termLaunch(conn_data);
 			// oba.cancelReservation();
 		}
 	}
