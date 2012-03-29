@@ -9,9 +9,7 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.XmlRpcRequest;
@@ -22,12 +20,14 @@ import org.apache.xmlrpc.client.XmlRpcCommonsTransport;
 import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
 import org.apache.xmlrpc.client.XmlRpcTransport;
 
-public class TestOBA {
+public class OBALogic {
 	public enum Platform {
 		Windows, Linux, Mac, Android, iPhone, iPad
 	}
 
 	private int image_id;
+
+	private String image_name;
 
 	private Platform client_plat;
 
@@ -39,17 +39,26 @@ public class TestOBA {
 
 	private String duration;
 
-	private ArrayList<Integer> activeRequests;
+	private int active_req_id;
+
+	private int initial_loading_time;
 
 	private XmlRpcClient client;
 
-	public TestOBA(int image_id, final String username, final String password,
-			Platform client_plat, String startTime, String duration) {
+	public OBALogic(final String username, final String password) {
+		this(0, null, username, password, null, null, null);
+	}
+
+	public OBALogic(int image_id, String image_name, final String username,
+			final String password, Platform client_plat, String startTime,
+			String duration) {
 		this.image_id = image_id;
+		this.image_name = image_name;
 		this.username = username;
 		this.password = password;
 		this.client_plat = client_plat;
-		this.activeRequests = new ArrayList<Integer>();
+		this.active_req_id = -1;
+		this.initial_loading_time = -1;
 		this.startTime = startTime;
 		this.duration = duration;
 
@@ -102,7 +111,8 @@ public class TestOBA {
 			}
 
 		} catch (XmlRpcException e) {
-			e.printStackTrace();
+			System.err.println("XML RPC Call Error!");
+			// e.printStackTrace();
 		}
 
 		return result;
@@ -119,18 +129,13 @@ public class TestOBA {
 	// return resultHash;
 	// }
 
-	private void getImageID() {
+	public void getImageID() {
 		String[] params = null;
 		xmlRPCcall("XMLRPCgetImages", params);
 	}
 
-	private boolean makeReservation() {
+	public boolean makeReservation() {
 		String[] params = new String[3];
-		// VCL2.2.1 SandBox image id 2422
-		/*
-		 * {id=2813, name=centos_tunnel_main_campus} {id=1913,
-		 * name=centos_tunnel_mcnc}
-		 */
 
 		params[0] = Integer.toString(image_id);
 		params[1] = startTime;
@@ -141,41 +146,11 @@ public class TestOBA {
 		boolean success_in_resv = false;
 		if (result.get("status").equals("success")) {
 			int request_id = Integer.parseInt((String) result.get("requestid"));
-			this.activeRequests.add(request_id);
+			this.active_req_id = request_id;
 			System.out
 					.println("Succeed in making the reservation, request id is: "
 							+ request_id);
 
-			// Check whether the reservation is ready
-			while (true) {
-				HashMap status = getRequestStatus(request_id);
-
-				if (status.get("status").equals("ready")) {
-					System.out.println("The reservation is ready!");
-					success_in_resv = true;
-					break;
-				} else if (status.get("status").equals("loading")) {
-					int remain_time = (Integer) status.get("time");
-					try {
-						System.out
-								.println("The reservation is still loading with "
-										+ remain_time + " minutes remained...");
-						// Wait for half of the remaining time and then check
-						// again.
-						if (remain_time <= 1) {
-							TimeUnit.SECONDS.sleep(30);
-						} else {
-							TimeUnit.MINUTES.sleep((int) (remain_time / 2));
-						}
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				} else {
-					System.err.println("Fail to make a reservation.");
-					break;
-				}
-			}
 		} else {
 			System.err.println("Fail to make a reservation.");
 		}
@@ -183,15 +158,43 @@ public class TestOBA {
 		return success_in_resv;
 	}
 
-	private HashMap getRequestStatus(int request_id) {
+	public String[] getPercentageStatus() {
+		int complete_percent = -1;
+		String remain_time_str = null;
+
+		// Check whether the reservation is ready
+		HashMap status = getRequestStatus(active_req_id);
+
+		if (status.get("status").equals("ready")) {
+			complete_percent = 100;
+			remain_time_str = "Ready";
+		} else if (status.get("status").equals("loading")) {
+			remain_time_str = (String) status.get("time");
+			int remain_time = Integer.parseInt(remain_time_str);
+
+			if (initial_loading_time < 0) {
+				initial_loading_time = remain_time;
+			}
+
+			complete_percent = (int) (((float) initial_loading_time - (float) remain_time)
+					/ (float) initial_loading_time * 100.0);
+		} else {
+			System.err.println("Fail to make a reservation.");
+		}
+
+		return new String[] { Integer.toString(complete_percent),
+				remain_time_str };
+	}
+
+	public HashMap getRequestStatus(int request_id) {
 		Object[] params = new Object[1];
 		params[0] = request_id;
 		return (HashMap) xmlRPCcall("XMLRPCgetRequestStatus", params);
 	}
 
-	private void cancelReservation() {
-		if (!this.activeRequests.isEmpty()) {
-			int request_id = this.activeRequests.get(0);
+	public void cancelReservation() {
+		if (this.active_req_id > 0) {
+			int request_id = this.active_req_id;
 			Object[] params = new Object[1];
 			params[0] = request_id;
 			HashMap result = (HashMap) xmlRPCcall("XMLRPCendRequest", params);
@@ -199,7 +202,7 @@ public class TestOBA {
 			if (result.get("status").equals("success")) {
 				System.out
 						.println("End reservation, request id: " + request_id);
-				this.activeRequests.remove(0);
+				this.active_req_id = -1;
 			} else {
 				System.err.println("Fail to end reservation, request id: "
 						+ request_id);
@@ -207,7 +210,7 @@ public class TestOBA {
 		}
 	}
 
-	private String[] getConnectData() {
+	public String[] getConnectData() {
 		InetAddress addr;
 		String ipAddr;
 
@@ -221,7 +224,7 @@ public class TestOBA {
 			return null;
 		}
 
-		Object[] params = { this.activeRequests.get(0), ipAddr };
+		Object[] params = { this.active_req_id, ipAddr };
 		// Object[] params = { 1744326, ipAddr };
 
 		HashMap result = (HashMap) xmlRPCcall("XMLRPCgetRequestConnectData",
@@ -251,7 +254,16 @@ public class TestOBA {
 		return conn_data;
 	}
 
-	private void termLaunch(String[] conn_data) {
+	public boolean loginCheck() {
+		HashMap result = (HashMap) xmlRPCcall("XMLRPCtest", null);
+		if (result != null && result.get("status").equals("success")) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public void termLaunch(String[] conn_data) {
 		String term = null, ssh_command = null;
 		// In order to automatic use ssh to login, we need "sshpass" to provide
 		// the password to the shell
@@ -353,6 +365,14 @@ public class TestOBA {
 			termLaunch(conn_data);
 			// oba.cancelReservation();
 		}
+	}
+
+	public int getImage_id() {
+		return image_id;
+	}
+
+	public String getImage_name() {
+		return image_name;
 	}
 
 }

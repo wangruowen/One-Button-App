@@ -1,6 +1,7 @@
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
@@ -25,6 +26,13 @@ public class LoginDialog {
 		shlWelcomeToUse.setText("Welcome to VCL One Button App");
 		shlWelcomeToUse.setSize(500, 350);
 		shlWelcomeToUse.setLayout(new FormLayout());
+
+		// center the dialog screen to the monitor
+		Rectangle bounds = display.getBounds();
+		Rectangle rect = shlWelcomeToUse.getBounds();
+		int x = bounds.x + (bounds.width - rect.width) / 2;
+		int y = bounds.y + (bounds.height - rect.height) / 2;
+		shlWelcomeToUse.setLocation(x, y);
 
 		Label lblLogo = new Label(shlWelcomeToUse, SWT.NONE);
 		FormData fd_lblLogo = new FormData();
@@ -100,16 +108,25 @@ public class LoginDialog {
 				}
 				// TODO We need to use VCL XML RPC to check whether the
 				// username/password are correct
+				OBALogic oba_inst = new OBALogic(username, password);
+				if (!oba_inst.loginCheck()) {
+					MessageBox dialog = new MessageBox(shlWelcomeToUse,
+							SWT.ICON_ERROR | SWT.OK);
+					dialog.setText("Login fail!");
+					dialog.setMessage("Login fail! Please enter correct username and password.");
+					dialog.open();
+					return;
+				} else {
+					// Now close this login dialog
+					if (!shlWelcomeToUse.isDisposed()) {
+						shlWelcomeToUse.dispose();
+					}
+					display.dispose();
 
-				// Now close this login dialog
-				if (!shlWelcomeToUse.isDisposed()) {
-					shlWelcomeToUse.dispose();
+					// Now start the main OBA GUI
+					MainOBAGUI mainWindow = new MainOBAGUI(username, password);
+					mainWindow.open();
 				}
-				display.dispose();
-
-				// Now start the main OBA GUI
-				MainOBAGUI mainWindow = new MainOBAGUI(username, password);
-				mainWindow.open();
 			}
 		});
 		FormData fd_btnLoginButton = new FormData();
