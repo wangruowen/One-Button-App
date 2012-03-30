@@ -34,29 +34,18 @@ public class MainOBAGUI {
 	protected Shell shell;
 	private Table table;
 
-	private String username;
-	private String password;
 	private Table statusTable;
 	private TabFolder mainTabFolder;
 	private TabItem tbtmStatus;
-	private ArrayList<OBALogic> activeOBA;
-
-	private MainOBAGUI self_ref;
+	
+	private OBAController controller;
 	private Text text_script_path;
 	private Text text_dropbox_url;
 
-	public MainOBAGUI(String username, String password) {
-		this.username = username;
-		this.password = password;
-		this.self_ref = this;
-		this.activeOBA = new ArrayList<OBALogic>();
+	public MainOBAGUI() {
+		this.controller = OBAController.getInstance();
 	}
-
-	public static void main(String[] args) {
-		MainOBAGUI testMainOBAGUI = new MainOBAGUI("dummy", "dummy");
-		testMainOBAGUI.open();
-	}
-
+	
 	/**
 	 * Open the window.
 	 * 
@@ -65,7 +54,6 @@ public class MainOBAGUI {
 	public void open() {
 		display = Display.getDefault();
 		createContents();
-
 		// center the dialog screen to the monitor
 		Rectangle bounds = display.getBounds();
 		Rectangle rect = shell.getBounds();
@@ -155,12 +143,16 @@ public class MainOBAGUI {
 			TableColumn column = new TableColumn(table, SWT.NONE);
 			column.setText(titles[i]);
 		}
+		
 		loadPreconfiguredOBAItems(table);
+		
 		for (int i = 0; i < titles.length; i++) {
 			table.getColumn(i).pack();
 		}
 
 		Button btnOba = new Button(compo1, SWT.NONE);
+		
+		// Launch button is clicked
 		btnOba.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -174,8 +166,20 @@ public class MainOBAGUI {
 					dialog.open();
 					return;
 				} else {
-					self_ref.start_one_OBA_instance(selectedItems);
+//					self_ref.start_one_OBA_instance(selectedItems);
+					controller.launchOBA(selectedItems);
 				}
+			}
+
+			/**
+			 * this method looks into the reservationList of the controller and find the OBABean corresponding to each input TableItem   
+			 * @param selectedItems the list of input TableItem 
+			 * @return
+			 */
+			private OBABean[] getOBAof(TableItem[] selectedItems) {
+				// TODO Auto-generated method stub
+
+				return null;
 			}
 		});
 
@@ -368,6 +372,24 @@ public class MainOBAGUI {
 		fd_text_dropbox_url.right = new FormAttachment(100, -10);
 		fd_text_dropbox_url.top = new FormAttachment(text_script_path, 6);
 		text_dropbox_url.setLayoutData(fd_text_dropbox_url);
+		
+		// Create button is clicked
+		Button btnCreate = new Button(compo2, SWT.NONE);
+		btnCreate.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				//if (checkOBACreationParams() {
+				//	controller.createOBA();
+				//}
+			}
+		});
+		FormData fd_btnCreate = new FormData();
+		fd_btnCreate.top = new FormAttachment(100, -61);
+		fd_btnCreate.left = new FormAttachment(btnBrowseButton, 0, SWT.LEFT);
+		fd_btnCreate.bottom = new FormAttachment(100, -36);
+		fd_btnCreate.right = new FormAttachment(100, -45);
+		btnCreate.setLayoutData(fd_btnCreate);
+		btnCreate.setText("Create");
 
 		/**
 		 * tab3.
@@ -400,7 +422,7 @@ public class MainOBAGUI {
 		}
 	}
 
-	private void updateStatusTable(final OBALogic oba_instance) {
+	private void updateStatusTable(final OBABean oba_instance) {
 		final TableItem one_status_Item = new TableItem(statusTable, SWT.NONE);
 		one_status_Item
 				.setText(0, Integer.toString(oba_instance.getImage_id()));
@@ -488,26 +510,27 @@ public class MainOBAGUI {
 		item3.setText(0, "1913");
 		item3.setText(1, "centos_tunnel_mcnc");
 		item3.setText(2, "Our testing image3");
+		loadReservations(mainTable, controller.getCurrentReservations());
 	}
 
 	/**
 	 * This method is called when the "One Button Start" button is clicked.
-	 * 
+	 * This method is moved to the controller
 	 * @param selectedItems
 	 */
-	private void start_one_OBA_instance(TableItem[] selectedItems) {
-		// Get all information needed for making a reservation
-		int image_id = Integer.parseInt(selectedItems[0].getText(0));
-		String name = selectedItems[0].getText(1);
-		String startTime = "now";
-		String duration = "60";
-		mainTabFolder.setSelection(2);
-
-		OBALogic one_OBA_instance = new OBALogic(image_id, name, username,
-				password, OBALogic.Platform.Windows, startTime, duration);
-		activeOBA.add(one_OBA_instance);
-
-		updateStatusTable(one_OBA_instance);
+//	private void start_one_OBA_instance(TableItem[] selectedItems) {
+//		// Get all information needed for making a reservation
+//		int image_id = Integer.parseInt(selectedItems[0].getText(0));
+//		String name = selectedItems[0].getText(1);
+//		String startTime = "now";
+//		String duration = "60";
+//		mainTabFolder.setSelection(2);
+//
+//		OBALogic one_OBA_instance = new OBALogic(image_id, name, username,
+//				password, OBALogic.Platform.Windows, startTime, duration);
+//		activeOBA.add(one_OBA_instance);
+//
+//		updateStatusTable(one_OBA_instance);
 		// if (one_OBA_instance.makeReservation()) {
 		// // If succeed in making the reservation, we should
 		// // switch to the status tab to show the
@@ -516,5 +539,14 @@ public class MainOBAGUI {
 		// } else {
 		// // make resevation fail.
 		// }
+//	}
+	
+	/**
+	 * TODO : fill the code
+	 * This method take an ArrayList of OBABean and load it into a table
+	 * @param reservationList
+	 */
+	private void loadReservations(Table mainTable, ArrayList<OBABean> reservationList) {
+		
 	}
 }

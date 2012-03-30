@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
@@ -20,49 +21,29 @@ import org.apache.xmlrpc.client.XmlRpcCommonsTransport;
 import org.apache.xmlrpc.client.XmlRpcCommonsTransportFactory;
 import org.apache.xmlrpc.client.XmlRpcTransport;
 
+/**
+ * The OBALogic is the connector with VCL server
+ * It will be responsible to sending and receiving the request from client to VCL server
+ * @author Minh Tuan PHAM
+ *
+ */
 public class OBALogic {
-	public enum Platform {
-		Windows, Linux, Mac, Android, iPhone, iPad
-	}
-
-	private int image_id;
-
-	private String image_name;
-
-	private Platform client_plat;
 
 	private String username;
 
 	private String password;
 
-	private String startTime;
-
-	private String duration;
-
-	private int active_req_id;
-
-	private int initial_loading_time;
-
 	private XmlRpcClient client;
+	
+	private String errMsg;
 
-	public OBALogic(final String username, final String password) {
-		this(0, null, username, password, null, null, null);
-	}
-
-	public OBALogic(int image_id, String image_name, final String username,
-			final String password, Platform client_plat, String startTime,
-			String duration) {
-		this.image_id = image_id;
-		this.image_name = image_name;
+	public OBALogic(final String username,
+			final String password) {
 		this.username = username;
 		this.password = password;
-		this.client_plat = client_plat;
-		this.active_req_id = -1;
-		this.initial_loading_time = -1;
-		this.startTime = startTime;
-		this.duration = duration;
 
 		XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();
+		
 		try {
 			config.setServerURL(new URL(
 					"https://vcl.ncsu.edu/scheduling/index.php?mode=xmlrpccall"));
@@ -118,82 +99,49 @@ public class OBALogic {
 		return result;
 	}
 
-	// private HashMap parseResult(Object[] result) {
-	// HashMap<String, Object> resultHash = new HashMap<String, Object>();
-	//
-	// for(Object each_obj : result) {
-	// Object[] each_obj_array = (Object[])each_obj;
-	// resultHash.put((String)each_obj_array[0], each_obj_array[1]);
-	// }
-	//
-	// return resultHash;
-	// }
-
-	public void getImageID() {
-		String[] params = null;
-		xmlRPCcall("XMLRPCgetImages", params);
+	/**
+	 * This method try to send a reservation request to the VCL server
+	 * If success: return the requestid
+	 * If failed: return the value -1 and an error message message in the variable errMsg of class
+	 * @param imageid
+	 * @param start
+	 * @param length
+	 * @return requestid or -1.
+	 */
+	public int sendRequestReservation(int imageid, int start, int length) {
+		errMsg = "Error Message";
+		return -1;
 	}
-
-	public boolean makeReservation() {
-		String[] params = new String[3];
-
-		params[0] = Integer.toString(image_id);
-		params[1] = startTime;
-		params[2] = duration; // Resever for one hour
-
-		HashMap result = (HashMap) xmlRPCcall("XMLRPCaddRequest", params);
-
-		boolean success_in_resv = false;
-		if (result.get("status").equals("success")) {
-			int request_id = Integer.parseInt((String) result.get("requestid"));
-			this.active_req_id = request_id;
-			System.out
-					.println("Succeed in making the reservation, request id is: "
-							+ request_id);
-
-		} else {
-			System.err.println("Fail to make a reservation.");
-		}
-
-		return success_in_resv;
+	
+	/**
+	 * This method checks request status
+	 * 
+	 * @param request_id
+	 * @return	<"error", errormsg> : errormsg may be request error or failed request
+	 * 			<"ready">
+	 * 			<"loading",estimated time>
+	 * 			<"timeout"> : request timeout because of no connection in the limit time
+	 * 			<"future">
+	 */
+	public HashMap<String, String> getRequestStatus(int requestID) {
+		/*Object[] params = new Object[1];
+		params[0] = requestID;
+		return (HashMap) xmlRPCcall("XMLRPCgetRequestStatus", params);*/
+		return null;
 	}
-
-	public String[] getPercentageStatus() {
-		int complete_percent = -1;
-		String remain_time_str = null;
-
-		// Check whether the reservation is ready
-		HashMap status = getRequestStatus(active_req_id);
-
-		if (status.get("status").equals("ready")) {
-			complete_percent = 100;
-			remain_time_str = "Ready";
-		} else if (status.get("status").equals("loading")) {
-			remain_time_str = (String) status.get("time");
-			int remain_time = Integer.parseInt(remain_time_str);
-
-			if (initial_loading_time < 0) {
-				initial_loading_time = remain_time;
-			}
-
-			complete_percent = (int) (((float) initial_loading_time - (float) remain_time)
-					/ (float) initial_loading_time * 100.0);
-		} else {
-			System.err.println("Fail to make a reservation.");
-		}
-
-		return new String[] { Integer.toString(complete_percent),
-				remain_time_str };
-	}
-
-	public HashMap getRequestStatus(int request_id) {
-		Object[] params = new Object[1];
-		params[0] = request_id;
-		return (HashMap) xmlRPCcall("XMLRPCgetRequestStatus", params);
-	}
-
-	public void cancelReservation() {
+	
+	/**
+	 * This method send a request canceling an reservation
+	 * This method may be quite tricky, because it need to differentiate between a requesting reservation and a successfully requested reservation
+	 * in both case, it should cancel the reservation
+	 * 
+	 * @return	If success: true
+	 * 			If failed: return false and an error message message in the variable errMsg of class
+	 */
+	public boolean requestCancelReservation(int reservationID) {
+		/*
 		if (this.active_req_id > 0) {
+		 
 			int request_id = this.active_req_id;
 			Object[] params = new Object[1];
 			params[0] = request_id;
@@ -208,12 +156,46 @@ public class OBALogic {
 						+ request_id);
 			}
 		}
+		*/
+		return false;
 	}
+	
+	/**
+	 * This method send a request extending the reservation
+	 * @param reservationID
+	 * @param extendTime
+	 * @return	If success: true
+	 * 			If failed: return false and an error message message in the variable errMsg of class
+	 */
+	public boolean extendReservation(int reservationID, int extendTime) {
+		return false;
+	}
+	
 
-	public String[] getConnectData() {
+	/**
+	 * Send request to the VCL server and ask for ALL the informations of the current Reservation
+	 * this function need to fill all the fields each OBABean: request_id, image_name, image_id, etc.
+	 * @return the ArrayList of all the OBABean or null
+	 */
+	public ArrayList<OBABean> getCurrentReservations() {
+		return null;
+	}
+	
+	/**
+	 * This method send a request to VCL server to get the connection data for a requestID
+	 * This method should be called only after the request status checking
+	 * @param	requestID
+	 * @param	ip address of connecting user's compute
+	 * 
+	 * @return 	a String[] with [0] = serverIP - address of the reserved machine
+								[1] = user - user to use when connecting to the machine
+								[2] = password - password to use when connecting to the machine
+				null if failed
+	 */
+	public String[] getConnectData(int requestID, String remoteIP) {
 		InetAddress addr;
 		String ipAddr;
-
+/*
 		try {
 			addr = InetAddress.getLocalHost();
 			// Get IP Address
@@ -252,8 +234,27 @@ public class OBALogic {
 		}
 
 		return conn_data;
+		*/
+		return null;
 	}
 
+	/**
+	 * This method send a request to the server to get all the accessible Images for this user
+	 * @return HashMap <"ImageID", "ImageName">
+	 */
+	public HashMap<String, String> getAvailableImages() {
+		/*
+		String[] params = null;
+		xmlRPCcall("XMLRPCgetImages", params);
+		*/
+		return null;
+		
+	}
+	
+	/**
+	 * Check username, password
+	 * @return
+	 */
 	public boolean loginCheck() {
 		HashMap result = (HashMap) xmlRPCcall("XMLRPCtest", null);
 		if (result != null && result.get("status").equals("success")) {
@@ -263,116 +264,44 @@ public class OBALogic {
 		return false;
 	}
 
-	public void termLaunch(String[] conn_data) {
-		String term = null, ssh_command = null;
-		// In order to automatic use ssh to login, we need "sshpass" to provide
-		// the password to the shell
-		String[] commands = null;
-		switch (this.client_plat) {
-		case Windows:
-			term = "./putty.exe";
-			ssh_command = conn_data[1] + "@" + conn_data[0];
-			commands = new String[] { term, "-ssh", ssh_command, "-pw",
-					conn_data[2] };
-			break;
-		case Linux:
-			term = "/usr/bin/gnome-terminal";
-			ssh_command = "expect -c 'set password " + conn_data[2]
-					+ "; spawn ssh -o StrictHostKeyChecking=no " + conn_data[1]
-					+ "@" + conn_data[0]
-					+ "; expect assword; send \"$password\r\"; interact'";
-			commands = new String[] { term, "-e", ssh_command };
-			break;
-		case Mac:
-			// Too many nested script commands, the single/double quotes get
-			// mixed together, we have to write the entire script to a file,
-			// and use osascript to execute this script file.
-			String script = "tell app \"Terminal\"\nActivate\ndo script ";
-			script += "\"expect -c 'set password "
-					+ conn_data[2]
-					+ "; spawn ssh -o StrictHostKeyChecking=no "
-					+ conn_data[1]
-					+ "@"
-					+ conn_data[0]
-					+ "; expect assword; send \\\"$password\\r\\\"; interact'\"\n";
-			script += "end tell";
-			try {
-				Writer script_file = new OutputStreamWriter(
-						new FileOutputStream("tmp_script"), "UTF-8");
-				script_file.write(script);
-				script_file.close();
-			} catch (FileNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+	// private HashMap parseResult(Object[] result) {
+		// HashMap<String, Object> resultHash = new HashMap<String, Object>();
+		//
+		// for(Object each_obj : result) {
+		// Object[] each_obj_array = (Object[])each_obj;
+		// resultHash.put((String)each_obj_array[0], each_obj_array[1]);
+		// }
+		//
+		// return resultHash;
+		// }
+	
+	/*
+	public String[] getPercentageStatus() {
+		int complete_percent = -1;
+		String remain_time_str = null;
+
+		// Check whether the reservation is ready
+		HashMap status = getRequestStatus(active_req_id);
+
+		if (status.get("status").equals("ready")) {
+			complete_percent = 100;
+			remain_time_str = "Ready";
+		} else if (status.get("status").equals("loading")) {
+			remain_time_str = (String) status.get("time");
+			int remain_time = Integer.parseInt(remain_time_str);
+
+			if (initial_loading_time < 0) {
+				initial_loading_time = remain_time;
 			}
 
-			commands = new String[] { "osascript", "tmp_script" };
-			break;
-		case Android:
-
-			break;
-
-		default:
-			break;
+			complete_percent = (int) (((float) initial_loading_time - (float) remain_time)
+					/ (float) initial_loading_time * 100.0);
+		} else {
+			System.err.println("Fail to make a reservation.");
 		}
-		// System.out.println(ssh_command);
 
-		// Using string array is due to the requirement of the argument accepted
-		// by rt.exec.
-		Runtime rt = Runtime.getRuntime();
-		try {
-			System.out.println("Now launch the terminal");
-			rt.exec(commands);
-
-			// Delete the temp script file if it exists
-			Thread.sleep(1000);
-			File tmp_script = new File("tmp_script");
-			if (tmp_script.exists()) {
-				tmp_script.delete();
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		return new String[] { Integer.toString(complete_percent),
+				remain_time_str };
 	}
-
-	public void start() {
-		// TestOBA oba = new TestOBA(args[0], args[1], platform);
-
-		// oba.getImageID();
-		if (makeReservation()) {
-			String[] conn_data = getConnectData();
-
-			// Now launch a Linux terminal to SSH to the reserved machine.
-			try {
-				// Wait for a short time between getConnectData and termLaunch,
-				// since the VCL needs time to process
-				// remote IP in its firewall.
-				Thread.sleep(4000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			termLaunch(conn_data);
-			// oba.cancelReservation();
-		}
-	}
-
-	public int getImage_id() {
-		return image_id;
-	}
-
-	public String getImage_name() {
-		return image_name;
-	}
-
+	*/
 }
