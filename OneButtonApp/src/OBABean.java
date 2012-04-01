@@ -14,10 +14,6 @@ import java.util.HashMap;
  */
 public class OBABean {
 
-	public enum Platform {
-		Windows, Linux, Mac, Android, iPhone, iPad
-	}
-	
 	private int id;
 	
 	private int request_id;
