@@ -57,40 +57,7 @@ public class OBABean {
 		this.isReserved = isReserved;
 	}
 	
-	/*
-	 * This method make a reservation for this OBABean
-	 * using the methods in the connector
-	 * 
-	 * @param	The connector is passed by the controller when we want to make a reservation for this OBABean
-	 * @return 
-	 */
-	public boolean makeReservation(OBALogic VCLConnector) {
-		/*
-		String[] params = new String[3];
 
-		params[0] = Integer.toString(image_id);
-		params[1] = startTime;
-		params[2] = duration; // Resever for one hour
-
-		HashMap result = (HashMap) xmlRPCcall("XMLRPCaddRequest", params);
-
-		boolean success_in_resv = false;
-		if (result.get("status").equals("success")) {
-			int request_id = Integer.parseInt((String) result.get("requestid"));
-			this.active_req_id = request_id;
-			System.out
-					.println("Succeed in making the reservation, request id is: "
-							+ request_id);
-
-		} else {
-			System.err.println("Fail to make a reservation.");
-		}
-
-		return success_in_resv;
-		*/
-		return false;
-	}
-	
 	/**
 	 * 
 	 * @param VCLConnector

@@ -7,7 +7,10 @@ import org.eclipse.swt.widgets.TableItem;
 public class OBAController {
 	private static OBAController instance = null;
 	private ArrayList<OBABean> reservationsList;
-	private OBALogic VCLConnector;
+	
+	// public for the test purpose, need to change back to private after that.
+	public OBALogic VCLConnector;
+	
 	private String username;
 	private String password;
 	private LoginDialog loginOBA;
@@ -47,6 +50,8 @@ public class OBAController {
 
 	public void showMainOBA() {
 		//controller.loadCurrentReservations();
+		//HashMap<Integer, String>[] list_image = VCLConnector.getAvailableImages();
+		//System.out.print(list_image);
 		if (mainOBA == null) {
 			mainOBA = new MainOBAGUI();
 		}

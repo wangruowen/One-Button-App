@@ -10,8 +10,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 
+import javax.naming.spi.DirStateFactory.Result;
+
+import org.apache.http.client.cache.ResourceFactory;
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.XmlRpcRequest;
 import org.apache.xmlrpc.client.XmlRpcClient;
@@ -95,22 +99,36 @@ public class OBALogic {
 			System.err.println("XML RPC Call Error!");
 			// e.printStackTrace();
 		}
-
 		return result;
 	}
 
 	/**
 	 * This method try to send a reservation request to the VCL server
 	 * If success: return the requestid
-	 * If failed: return the value -1 and an error message message in the variable errMsg of class
+	 * If failed: return the value -1 and an error message in the variable errMsg of class
 	 * @param imageid
 	 * @param start
-	 * @param length
+	 * @param length multiple of 15
 	 * @return requestid or -1.
 	 */
-	public int sendRequestReservation(int imageid, int start, int length) {
-		errMsg = "Error Message";
-		return -1;
+	public int sendRequestReservation(int imageid, Calendar start, int length) {
+		Object[] params = new Object[3];
+		params[0] = imageid;
+		params[1] = (int) (start.getTimeInMillis() / 1000L);
+		params[2] = length;
+		HashMap result = (HashMap) xmlRPCcall("XMLRPCaddRequest", params);
+		if (result.get("status").equals("success")) {
+			System.out.print(result.get("requestid"));
+			return Integer.parseInt((String) result.get("requestid"));
+		} else {
+			if (result.get("status").equals("notavailable")) {
+				errMsg = "No computers were available for the request";
+			} else {
+				errMsg = (String) result.get("errormsg");
+			}
+			System.out.print(errMsg);
+			return -1;
+		}
 	}
 	
 	/**
@@ -123,11 +141,18 @@ public class OBALogic {
 	 * 			<"timeout"> : request timeout because of no connection in the limit time
 	 * 			<"future">
 	 */
-	public HashMap<String, String> getRequestStatus(int requestID) {
-		/*Object[] params = new Object[1];
+	public String[] getRequestStatus(int requestID) {
+		Object[] params = new Object[1];
 		params[0] = requestID;
-		return (HashMap) xmlRPCcall("XMLRPCgetRequestStatus", params);*/
-		return null;
+		String[] res = new String[2];
+		HashMap result = (HashMap) xmlRPCcall("XMLRPCgetRequestStatus", params);
+		res[0] = (String) result.get("status");
+		if (result.get("status").equals("error")) {
+			res[1] = (String) result.get("errormsg");
+		} else if (result.get("status").equals("loading")) {
+			res[1] = (String) result.get("time");
+		}
+		return res;
 	}
 	
 	/**
@@ -138,37 +163,42 @@ public class OBALogic {
 	 * @return	If success: true
 	 * 			If failed: return false and an error message message in the variable errMsg of class
 	 */
-	public boolean requestCancelReservation(int reservationID) {
-		/*
-		if (this.active_req_id > 0) {
-		 
-			int request_id = this.active_req_id;
-			Object[] params = new Object[1];
-			params[0] = request_id;
-			HashMap result = (HashMap) xmlRPCcall("XMLRPCendRequest", params);
-
-			if (result.get("status").equals("success")) {
-				System.out
-						.println("End reservation, request id: " + request_id);
-				this.active_req_id = -1;
-			} else {
-				System.err.println("Fail to end reservation, request id: "
-						+ request_id);
-			}
+	public boolean requestCancelRequest(int requestid) {
+		Object[] params = new Object[1];
+		params[0] = requestid;
+		HashMap result = (HashMap) xmlRPCcall("XMLRPCendRequest", params);
+		
+		if (result.get("status").equals("success")) {
+			System.out.println("End reservation, request id: " + requestid);
+			return true;
+		} else {
+			System.err.println("Fail to end reservation, request id: " + requestid);
+			errMsg = (String) result.get("errormsg");
+			return false;
 		}
-		*/
-		return false;
 	}
 	
 	/**
 	 * This method send a request extending the reservation
-	 * @param reservationID
-	 * @param extendTime
+	 * @param requestid
+	 * @param extendTime Time in minutes to extend the reservation
 	 * @return	If success: true
 	 * 			If failed: return false and an error message message in the variable errMsg of class
 	 */
-	public boolean extendReservation(int reservationID, int extendTime) {
-		return false;
+	public boolean extendReservation(int requestid, int extendTime) {
+		Object[] params = new Object[2];
+		params[0] = requestid;
+		params[1] = extendTime;
+		HashMap result = (HashMap) xmlRPCcall("XMLRPCendRequest", params);
+		
+		if (result.get("status").equals("success")) {
+			System.out.println("Extend reservation, request id: " + requestid);
+			return true;
+		} else {
+			System.err.println("Fail to extend reservation, request id: " + requestid);
+			errMsg = (String) result.get("errormsg");
+			return false;
+		}
 	}
 	
 
@@ -242,13 +272,18 @@ public class OBALogic {
 	 * This method send a request to the server to get all the accessible Images for this user
 	 * @return HashMap <"ImageID", "ImageName">
 	 */
-	public HashMap<String, String> getAvailableImages() {
+	public HashMap<Integer, String>[] getAvailableImages() {
 		/*
-		String[] params = null;
-		xmlRPCcall("XMLRPCgetImages", params);
+		Object[] params = new Object[0];
+		Object[] result = (Object[]) xmlRPCcall("XMLRPCgetImages", params);
+		Object[] res = new Object[result.length];
+		for(int i = 0; i < result.length; i ++) {
+			res[i] = (HashMap<Integer, String>) result[i]; 
+			//res.put((Integer) result[i].get("id"), (String) result[i].get("image"));
+		}
+		return (HashMap<Integer, String>[])res;
 		*/
 		return null;
-		
 	}
 	
 	/**
@@ -304,4 +339,39 @@ public class OBALogic {
 				remain_time_str };
 	}
 	*/
+	
+	/*
+	 * This method make a reservation for this OBABean
+	 * using the methods in the connector
+	 * 
+	 * @param	The connector is passed by the controller when we want to make a reservation for this OBABean
+	 * @return 
+	 */
+	public boolean makeReservation(OBALogic VCLConnector) {
+		/*
+		String[] params = new String[3];
+
+		params[0] = Integer.toString(image_id);
+		params[1] = startTime;
+		params[2] = duration; // Resever for one hour
+
+		HashMap result = (HashMap) xmlRPCcall("XMLRPCaddRequest", params);
+
+		boolean success_in_resv = false;
+		if (result.get("status").equals("success")) {
+			int request_id = Integer.parseInt((String) result.get("requestid"));
+			this.active_req_id = request_id;
+			System.out
+					.println("Succeed in making the reservation, request id is: "
+							+ request_id);
+
+		} else {
+			System.err.println("Fail to make a reservation.");
+		}
+
+		return success_in_resv;
+		*/
+		return false;
+	}
+	
 }
