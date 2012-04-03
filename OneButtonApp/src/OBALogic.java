@@ -31,6 +31,7 @@ import org.apache.xmlrpc.client.XmlRpcTransport;
  * @author Minh Tuan PHAM
  *
  */
+
 public class OBALogic {
 
 	private String username;
@@ -272,18 +273,16 @@ public class OBALogic {
 	 * This method send a request to the server to get all the accessible Images for this user
 	 * @return HashMap <"ImageID", "ImageName">
 	 */
-	public HashMap<Integer, String>[] getAvailableImages() {
-		/*
+	public HashMap<Integer, String> getAvailableImages() {
 		Object[] params = new Object[0];
 		Object[] result = (Object[]) xmlRPCcall("XMLRPCgetImages", params);
-		Object[] res = new Object[result.length];
+		HashMap<Integer, String> res = new HashMap<Integer, String>(result.length);
 		for(int i = 0; i < result.length; i ++) {
-			res[i] = (HashMap<Integer, String>) result[i]; 
+			res.put((Integer) ((HashMap) result[i]).get("id"),(String) ((HashMap) result[i]).get("image"));
+			//System.out.print(((HashMap) result[i]).get("id") + "\n");
 			//res.put((Integer) result[i].get("id"), (String) result[i].get("image"));
 		}
-		return (HashMap<Integer, String>[])res;
-		*/
-		return null;
+		return res;
 	}
 	
 	/**

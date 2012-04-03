@@ -50,7 +50,7 @@ public class OBAController {
 
 	public void showMainOBA() {
 		//controller.loadCurrentReservations();
-		//HashMap<Integer, String>[] list_image = VCLConnector.getAvailableImages();
+		//HashMap<Integer, String> list_image = VCLConnector.getAvailableImages();
 		//System.out.print(list_image);
 		if (mainOBA == null) {
 			mainOBA = new MainOBAGUI();
