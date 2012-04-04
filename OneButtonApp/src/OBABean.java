@@ -21,7 +21,7 @@ public class OBABean {
 	private String ipAddress;
 	private Calendar startTime;	
 	private Calendar endTime;
-	private String duration;	
+	private long duration;	
 	private Platform clientPlatform;	
 	private boolean isReserved;
 	
@@ -43,16 +43,18 @@ public class OBABean {
 	 * @param duration
 	 */
 	public OBABean(int imageId, String imageName, final String username, final String password, String ipAddress, 
-				   Platform clientPlatform, Calendar startTime, Calendar endTime, String duration) {
+				   Platform clientPlatform, Calendar startTime, Calendar endTime, long duration, boolean isReserved) {
 		
 		setImageId(imageId);
 		setImageName(imageName);
 		setUsername(username);
 		setPassword(password);
+		this.ipAddress = ipAddress;
 		setClientPlatform(clientPlatform);
 		setStartTime(startTime);
 		setEndTime(endTime);
 		setDuration(duration);
+		this.isReserved = isReserved;
 	}
 	
 	/**
@@ -284,7 +286,7 @@ public class OBABean {
 	/**
 	 * @param duration the duration to set
 	 */
-	public void setDuration(String duration) {
+	public void setDuration(long duration) {
 		this.duration = duration;
 	}
 
@@ -292,7 +294,7 @@ public class OBABean {
 	/**
 	 * @return the duration
 	 */
-	public String getDuration() {
+	public long getDuration() {
 		return duration;
 	}
 

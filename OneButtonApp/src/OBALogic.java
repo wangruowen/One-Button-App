@@ -151,7 +151,7 @@ public class OBALogic {
 		if (result.get("status").equals("error")) {
 			res[1] = (String) result.get("errormsg");
 		} else if (result.get("status").equals("loading")) {
-			res[1] = (String) result.get("time");
+			res[1] = Integer.toString((Integer) result.get("time"));
 		}
 		return res;
 	}
@@ -214,11 +214,38 @@ public class OBALogic {
 		HashMap result = (HashMap) xmlRPCcall("XMLRPCgetRequestIds", params);
 		ArrayList<OBABean> reservationList = new ArrayList<OBABean>();
 		if (result.get("status").equals("success")) {
-			HashMap[] res = (HashMap[]) result.get("requests");
+			Object[] res = (Object[]) result.get("requests");
 			for (int i = 0; i < res.length; i ++) {
-				System.out.println(res[i]);
+				Calendar start = Calendar.getInstance();
+				long start_long = (Integer) ((HashMap) res[i]).get("start");;
+				start.setTimeInMillis(start_long*1000);
+				System.out.println(start.getTime().toString());
+				
+				Calendar end = Calendar.getInstance();
+				long end_long = (Integer) ((HashMap) res[i]).get("end");;
+				end.setTimeInMillis(end_long*1000);
+				System.out.println(end.getTime().toString());
+				
+				long duration = (end_long - start_long)/60;
+				int requestid = Integer.parseInt((String) ((HashMap) res[i]).get("requestid")) ;
+				int imageid = Integer.parseInt((String) ((HashMap) res[i]).get("imageid"));
+				String imagename = (String) ((HashMap) res[i]).get("imagename");
+				
+				String[] req_status = getRequestStatus(requestid);
+				String[] conn_data = new String[3];
+				boolean isReserved = req_status[0].equals("ready");
+				if (isReserved) {
+					conn_data = getConnectData(requestid);
+				} else {
+					conn_data[0] = null;
+					conn_data[1] = null;
+					conn_data[2] = null;
+				}
+				OBABean newBean = new OBABean(imageid, imagename, conn_data[1], conn_data[2], conn_data[0], Platform.Windows, start, end, duration, isReserved);
+				reservationList.add(newBean);
 			}
-			return null;
+
+			return reservationList;
 		} else {
 			System.err.println("Cannot get my requests: " + "\n");
 			errMsg = (String) result.get("errormsg");
