@@ -91,8 +91,11 @@ public class RDP {
 				out.write(newLine + "\n");
 					out.flush();				
 			}
-
 			out.close();
+			
+			//Print out where the temp rdp file was created
+			System.out.println("Temp RDP File=" + TEMP_DIR + user + "_" + requestID + ".rdp");
+			
 		} catch (Exception e) {e.printStackTrace();}
 	}
 	
@@ -118,8 +121,7 @@ public class RDP {
 	 * @param ipAddress - this is the host's outward facing IP address. NOT the local-based ip address.
 	 */
 	public void exec(String user, String password, String ipAddress, String requestID, Platform platform){
-		System.out.println(TEMP_DIR);
-		
+
 		//create an RDP file for this reservation
 		createRDPFromTemplate(user, password, ipAddress, requestID);
 	

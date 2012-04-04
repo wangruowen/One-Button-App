@@ -91,8 +91,8 @@ public class OBALogic {
 				return (HashMap) result;
 			} else {
 				Object[] result_array = (Object[]) result;
-				for (int i = 0; i < result_array.length; i++)
-					System.out.println(result_array[i]);
+//				for (int i = 0; i < result_array.length; i++)
+//					System.out.println(result_array[i]);
 				return result_array;
 			}
 
@@ -119,7 +119,7 @@ public class OBALogic {
 		params[2] = length;
 		HashMap result = (HashMap) xmlRPCcall("XMLRPCaddRequest", params);
 		if (result.get("status").equals("success")) {
-			System.out.print(result.get("requestid"));
+			System.out.print(result.get("requestid") + "\n");
 			return Integer.parseInt((String) result.get("requestid"));
 		} else {
 			if (result.get("status").equals("notavailable")) {
@@ -127,7 +127,7 @@ public class OBALogic {
 			} else {
 				errMsg = (String) result.get("errormsg");
 			}
-			System.out.print(errMsg);
+			System.out.print(errMsg + "\n");
 			return -1;
 		}
 	}
@@ -209,7 +209,21 @@ public class OBALogic {
 	 * @return the ArrayList of all the OBABean or null
 	 */
 	public ArrayList<OBABean> getCurrentReservations() {
-		return null;
+		
+		Object[] params = new Object[0];
+		HashMap result = (HashMap) xmlRPCcall("XMLRPCgetRequestIds", params);
+		ArrayList<OBABean> reservationList = new ArrayList<OBABean>();
+		if (result.get("status").equals("success")) {
+			HashMap[] res = (HashMap[]) result.get("requests");
+			for (int i = 0; i < res.length; i ++) {
+				System.out.println(res[i]);
+			}
+			return null;
+		} else {
+			System.err.println("Cannot get my requests: " + "\n");
+			errMsg = (String) result.get("errormsg");
+			return null;
+		}
 	}
 	
 	/**
@@ -223,10 +237,10 @@ public class OBALogic {
 								[2] = password - password to use when connecting to the machine
 				null if failed
 	 */
-	public String[] getConnectData(int requestID, String remoteIP) {
+	public String[] getConnectData(int requestID) {
 		InetAddress addr;
 		String ipAddr;
-/*
+
 		try {
 			addr = InetAddress.getLocalHost();
 			// Get IP Address
@@ -237,7 +251,7 @@ public class OBALogic {
 			return null;
 		}
 
-		Object[] params = { this.active_req_id, ipAddr };
+		Object[] params = { requestID, ipAddr };
 		// Object[] params = { 1744326, ipAddr };
 
 		HashMap result = (HashMap) xmlRPCcall("XMLRPCgetRequestConnectData",
@@ -265,8 +279,6 @@ public class OBALogic {
 		}
 
 		return conn_data;
-		*/
-		return null;
 	}
 
 	/**
@@ -278,8 +290,8 @@ public class OBALogic {
 		Object[] result = (Object[]) xmlRPCcall("XMLRPCgetImages", params);
 		HashMap<Integer, String> res = new HashMap<Integer, String>(result.length);
 		for(int i = 0; i < result.length; i ++) {
-			res.put((Integer) ((HashMap) result[i]).get("id"),(String) ((HashMap) result[i]).get("image"));
-			//System.out.print(((HashMap) result[i]).get("id") + "\n");
+			res.put((Integer) ((HashMap) result[i]).get("id"),(String) ((HashMap) result[i]).get("name"));
+//			System.out.print(((HashMap) result[i]).get("name") + "\n");
 			//res.put((Integer) result[i].get("id"), (String) result[i].get("image"));
 		}
 		return res;

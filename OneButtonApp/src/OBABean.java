@@ -5,114 +5,76 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.util.HashMap;
+import java.util.Calendar;
 
 /**
- * each OBABean is corresponding to a reservation
- * @author Minh Tuan PHAM
- *
+ * Each OBABean is corresponding to a reservation
+ * @author Americo Rodriguez
  */
 public class OBABean {
-
-	private int id;
 	
-	private int request_id;
-	
-	private int image_id;
-
-	private String image_name;
-
+	private int requestId;	
+	private int imageId;
+	private String imageName;
 	private String username;
-
 	private String password;
-
-	private String start;
-	
-	private String end;
-
-	private String duration;
-
-	private int initial_loading_time;
-	
-	private Platform client_plat;
-
-	private String startTime;
-
-	private int active_req_id;
-	
+	private String ipAddress;
+	private Calendar startTime;	
+	private Calendar endTime;
+	private String duration;	
+	private Platform clientPlatform;	
 	private boolean isReserved;
 	
-	public OBABean(int image_id, String image_name, final String username,
-			final String password, Platform client_plat, String startTime,
-			String duration, boolean isReserved) {
-		this.image_id = image_id;
-		this.image_name = image_name;
-		this.username = username;
-		this.password = password;
-		this.client_plat = client_plat;
-		this.active_req_id = -1;
-		this.initial_loading_time = -1;
-		this.startTime = startTime;
-		this.duration = duration;
-		this.isReserved = isReserved;
-	}
-	
-
 	/**
-	 * 
-	 * @param VCLConnector
-	 * @return
+	 * Default Constructor
 	 */
-	public boolean endReservation(OBALogic VCLConnector) {
-		return false;
-	}
+	public OBABean(){}
 	
 	/**
-	 * Start the OBA
+	 * Constructor
+	 * @param imageId
+	 * @param imageName
+	 * @param username
+	 * @param password
+	 * @param ipAddress
+	 * @param clientPlatform
+	 * @param startTime
+	 * @param endTime
+	 * @param duration
 	 */
-	public void start() {
-		// TestOBA oba = new TestOBA(args[0], args[1], platform);
-
-		// oba.getImageID();
-		//if (makeReservation()) {
-			//String[] conn_data = getConnectData();
-
-			// Now launch a Linux terminal to SSH to the reserved machine.
-			try {
-				// Wait for a short time between getConnectData and termLaunch,
-				// since the VCL needs time to process
-				// remote IP in its firewall.
-				Thread.sleep(4000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			//termLaunch(conn_data);
-			// oba.cancelReservation();
-		//}
+	public OBABean(int imageId, String imageName, final String username, final String password, String ipAddress, 
+				   Platform clientPlatform, Calendar startTime, Calendar endTime, String duration) {
+		
+		setImageId(imageId);
+		setImageName(imageName);
+		setUsername(username);
+		setPassword(password);
+		setClientPlatform(clientPlatform);
+		setStartTime(startTime);
+		setEndTime(endTime);
+		setDuration(duration);
 	}
 	
 	/**
 	 * 
 	 * @param conn_data
 	 */
-	public void termLaunch(String[] conn_data) {
+	private void termLaunch(String[] conn_data) {
 		String term = null, ssh_command = null;
 		// In order to automatic use ssh to login, we need "sshpass" to provide
 		// the password to the shell
 		String[] commands = null;
-		switch (this.client_plat) {
+		switch (getClientPlatform()) {
 		case Windows:
 			term = "./putty.exe";
-			ssh_command = conn_data[1] + "@" + conn_data[0];
-			commands = new String[] { term, "-ssh", ssh_command, "-pw",
-					conn_data[2] };
+			ssh_command = getUsername() + "@" + getIpAddress();
+			commands = new String[] {term, "-ssh", ssh_command, "-pw", getPassword()};
 			break;
 		case Linux:
 			term = "/usr/bin/gnome-terminal";
-			ssh_command = "expect -c 'set password " + conn_data[2]
-					+ "; spawn ssh -o StrictHostKeyChecking=no " + conn_data[1]
-					+ "@" + conn_data[0]
+			ssh_command = "expect -c 'set password " + getPassword()
+					+ "; spawn ssh -o StrictHostKeyChecking=no " + getUsername()
+					+ "@" + getIpAddress()
 					+ "; expect assword; send \"$password\r\"; interact'";
 			commands = new String[] { term, "-e", ssh_command };
 			break;
@@ -122,42 +84,32 @@ public class OBABean {
 			// and use osascript to execute this script file.
 			String script = "tell app \"Terminal\"\nActivate\ndo script ";
 			script += "\"expect -c 'set password "
-					+ conn_data[2]
+					+ getPassword()
 					+ "; spawn ssh -o StrictHostKeyChecking=no "
-					+ conn_data[1]
+					+ getUsername()
 					+ "@"
-					+ conn_data[0]
+					+ getIpAddress()
 					+ "; expect assword; send \\\"$password\\r\\\"; interact'\"\n";
 			script += "end tell";
+			
+			//write the above commands to a script
 			try {
-				Writer script_file = new OutputStreamWriter(
-						new FileOutputStream("tmp_script"), "UTF-8");
+				Writer script_file = new OutputStreamWriter(new FileOutputStream("tmp_script"), "UTF-8");
 				script_file.write(script);
 				script_file.close();
-			} catch (FileNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			} catch (FileNotFoundException e1) {e1.printStackTrace();} 
+			  catch (UnsupportedEncodingException e) {e.printStackTrace();}
+			  catch (IOException e) {e.printStackTrace();}
 
+			//create the command which will call the script
 			commands = new String[] { "osascript", "tmp_script" };
 			break;
 		case Android:
-
 			break;
-
 		default:
 			break;
 		}
-		// System.out.println(ssh_command);
 
-		// Using string array is due to the requirement of the argument accepted
-		// by rt.exec.
 		Runtime rt = Runtime.getRuntime();
 		try {
 			System.out.println("Now launch the terminal");
@@ -169,21 +121,240 @@ public class OBABean {
 			if (tmp_script.exists()) {
 				tmp_script.delete();
 			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (IOException e) {e.printStackTrace();}
+		  catch (InterruptedException e) {e.printStackTrace();}
+	}
+	
+	/**
+	 * Launch the RDP client
+	 * @param conn_data has the ipAddress, username, and password
+	 */
+	private void rdpLaunch(String[] conn_data){
+		RDP rdp = new RDP();
+		
+		//Determine which client is executing RDP and adjust the command accordingly
+		switch (getClientPlatform()){
+		case Windows:
+			try{
+				rdp.exec(getUsername(), getPassword(), getIpAddress(), Integer.toString(getRequestId()), getClientPlatform());
+			} 
+			catch (Exception e1) {e1.printStackTrace();}
+			break;
+		default:
+			System.out.println("RDP capability is only available for Windows-based clients!");
 		}
 	}
+	
+	/**
+	 * Start the connection to the remote host/image
+	 */
+	public void start() {
+		String[] conn_data = {getIpAddress(), getUsername(), getPassword()};
+		
+		try {
+			// Wait for a short time after establishing a reservation and connecting to the host
+			// since the VCL needs time to process remote IP in its firewall.
+			Thread.sleep(30000); // 30 second wait seems to work well for both RDP and SSH.
+		} catch (InterruptedException e) {e.printStackTrace();}
 
-	public int getImage_id() {
-		return this.image_id;
+		//Determine if you need to connect to the host via RDP or SSH
+		if (RDP.isHostRDPReady(getIpAddress())) {
+			rdpLaunch(conn_data);	//use RDP to login to the terminal
+		} else {
+			termLaunch(conn_data);  //use ssh to login to the terminal
+		}
+		
+		//Signify that the OBA is reserved
+		setReservedIndicator(true);
 	}
 
-	public String getImage_name() {
-		return this.image_name;
+
+	/**
+	 * @param requestId the requestId to set
+	 */
+	public void setRequestId(int requestId) {
+		this.requestId = requestId;
 	}
 
+
+	/**
+	 * @return the requestId
+	 */
+	public int getRequestId() {
+		return requestId;
+	}
+
+
+	/**
+	 * @param imageId the imageId to set
+	 */
+	public void setImageId(int imageId) {
+		this.imageId = imageId;
+	}
+
+
+	/**
+	 * @return the imageId
+	 */
+	public int getImageId() {
+		return imageId;
+	}
+
+
+	/**
+	 * @param imageName the imageName to set
+	 */
+	public void setImageName(String imageName) {
+		this.imageName = imageName;
+	}
+
+
+	/**
+	 * @return the imageName
+	 */
+	public String getImageName() {
+		return imageName;
+	}
+
+
+	/**
+	 * @param username the username to set
+	 */
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+
+	/**
+	 * @return the username
+	 */
+	public String getUsername() {
+		return username;
+	}
+
+
+	/**
+	 * @param password the password to set
+	 */
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+
+	/**
+	 * @return the password
+	 */
+	public String getPassword() {
+		return password;
+	}
+
+
+	/**
+	 * @param start the start to set
+	 */
+	public void setStartTime(Calendar startTime) {
+		this.startTime = startTime;
+	}
+
+
+	/**
+	 * @return the start
+	 */
+	public Calendar getStartTime() {
+		return startTime;
+	}
+
+
+	/**
+	 * @param end the end to set
+	 */
+	public void setEndTime(Calendar endTime) {
+		this.endTime = endTime;
+	}
+
+
+	/**
+	 * @return the end
+	 */
+	public Calendar getEndTime() {
+		return endTime;
+	}
+
+
+	/**
+	 * @param duration the duration to set
+	 */
+	public void setDuration(String duration) {
+		this.duration = duration;
+	}
+
+
+	/**
+	 * @return the duration
+	 */
+	public String getDuration() {
+		return duration;
+	}
+
+
+	/**
+	 * @param clientPlatform the clientPlatform to set
+	 */
+	public void setClientPlatform(Platform clientPlatform) {
+		this.clientPlatform = clientPlatform;
+	}
+
+
+	/**
+	 * @return the clientPlatform
+	 */
+	public Platform getClientPlatform() {
+		return clientPlatform;
+	}
+
+
+	/**
+	 * @param isReserved the isReserved to set
+	 */
+	public void setReservedIndicator(boolean isReserved) {
+		this.isReserved = isReserved;
+	}
+
+
+	/**
+	 * @return the isReserved
+	 */
+	public boolean isReserved() {
+		return isReserved;
+	}
+
+
+	/**
+	 * @param ipAddress the ipAddress to set
+	 */
+	public void setIpAddress(String ipAddress) {
+		this.ipAddress = ipAddress;
+	}
+
+
+	/**
+	 * @return the ipAddress
+	 */
+	public String getIpAddress() {
+		return ipAddress;
+	}
+	
+//	public static void main(String[] args){
+//		OBABean oba = new OBABean();
+//		
+//		oba.setClientPlatform(Platform.Windows);
+//		oba.setUsername("arodrig3");
+//		oba.setPassword("JHdf9v");
+//		oba.setIpAddress("152.1.13.225");
+//		
+//		oba.setIpAddress("152.1.13.209");
+//		oba.setPassword("flipper1");
+//		
+//		oba.start();
+//	}
 }

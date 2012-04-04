@@ -425,8 +425,8 @@ public class MainOBAGUI {
 	private void updateStatusTable(final OBABean oba_instance) {
 		final TableItem one_status_Item = new TableItem(statusTable, SWT.NONE);
 		one_status_Item
-				.setText(0, Integer.toString(oba_instance.getImage_id()));
-		one_status_Item.setText(1, oba_instance.getImage_name());
+				.setText(0, Integer.toString(oba_instance.getImageId()));
+		one_status_Item.setText(1, oba_instance.getImageName());
 
 		final ProgressBar bar = new ProgressBar(statusTable, SWT.NONE);
 		TableEditor editor = new TableEditor(statusTable);

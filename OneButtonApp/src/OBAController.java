@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 
 import org.eclipse.swt.widgets.TableItem;
@@ -50,8 +51,14 @@ public class OBAController {
 
 	public void showMainOBA() {
 		//controller.loadCurrentReservations();
-		//HashMap<Integer, String> list_image = VCLConnector.getAvailableImages();
-		//System.out.print(list_image);
+//		HashMap<Integer, String> list_image = VCLConnector.getAvailableImages();
+//		System.out.println(list_image);
+//		Calendar now = Calendar.getInstance();
+//		int requestID = VCLConnector.sendRequestReservation(1008, now , 60);
+//		VCLConnector.getConnectData(1776879);
+//		VCLConnector.getCurrentReservations();
+//		VCLConnector.getConnectData(1776900);
+//		VCLConnector.getConnectData(1776943);
 		if (mainOBA == null) {
 			mainOBA = new MainOBAGUI();
 		}
