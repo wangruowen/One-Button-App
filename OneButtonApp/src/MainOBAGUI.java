@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.TableEditor;
@@ -49,7 +51,7 @@ public class MainOBAGUI {
 	public MainOBAGUI() {
 		this.controller = OBAController.getInstance();
 	}
-	
+
 	/**
 	 * Open the window.
 	 * 
@@ -168,8 +170,11 @@ public class MainOBAGUI {
 			}
 
 			/**
-			 * this method looks into the reservationList of the controller and find the OBABean corresponding to each input TableItem   
-			 * @param selectedItems the list of input TableItem 
+			 * this method looks into the reservationList of the controller and
+			 * find the OBABean corresponding to each input TableItem
+			 * 
+			 * @param selectedItems
+			 *            the list of input TableItem
 			 * @return
 			 */
 			private OBABean[] getOBAof(TableItem[] selectedItems) {
@@ -316,6 +321,17 @@ public class MainOBAGUI {
 		combo_choose_image.setLayoutData(fd_combo_1);
 
 		// Now list all available images in this combo
+		HashMap<Integer, String> image_hash_map = controller.VCLConnector
+				.getAvailableImages();
+		ArrayList<String> all_image_string_array = new ArrayList<String>();
+		for (Map.Entry<Integer, String> one_image_entry : image_hash_map
+				.entrySet()) {
+			all_image_string_array.add("Image ID: "
+					+ Integer.toString(one_image_entry.getKey()) + ", "
+					+ one_image_entry.getValue());
+		}
+		combo_choose_image.setItems(all_image_string_array
+				.toArray(new String[0]));
 
 		Label lblImage_Duration = new Label(compo2, SWT.NONE);
 		FormData fd_lblImage_Duration = new FormData();
@@ -368,15 +384,15 @@ public class MainOBAGUI {
 		fd_text_dropbox_url.right = new FormAttachment(100, -10);
 		fd_text_dropbox_url.top = new FormAttachment(text_script_path, 6);
 		text_dropbox_url.setLayoutData(fd_text_dropbox_url);
-		
+
 		// Create button is clicked
 		Button btnCreate = new Button(compo2, SWT.NONE);
 		btnCreate.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				//if (checkOBACreationParams() {
-				//	controller.createOBA();
-				//}
+				// if (checkOBACreationParams() {
+				// controller.createOBA();
+				// }
 			}
 		});
 		FormData fd_btnCreate = new FormData();
@@ -407,11 +423,15 @@ public class MainOBAGUI {
 		statusTable.setHeaderVisible(true);
 		statusTable.setLinesVisible(true);
 
-		String[] status_Titles = { "Image ID", "Name", "Status", "IP address",
-				"Username", "Password", "Remaining Time", "Auto Time Extend" };
+		String[] status_Titles = { "Image ID", "Name", "Status",
+				"Remaining Time", "Auto Time Extend", "IP address", "Username",
+				"Password" };
 		for (int i = 0; i < status_Titles.length; i++) {
 			TableColumn column = new TableColumn(statusTable, SWT.NONE);
 			column.setText(status_Titles[i]);
+			if (status_Titles[i].equals("Status")) {
+				column.setWidth(100);
+			}
 		}
 		for (int i = 0; i < status_Titles.length; i++) {
 			statusTable.getColumn(i).pack();

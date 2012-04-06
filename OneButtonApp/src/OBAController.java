@@ -129,6 +129,7 @@ public class OBAController {
 			result_Bean = new OBABean(image_id, image_name, username, password,
 					request_id, null, Platform.Windows, start_Time, null,
 					duration, false);
+			reservationsList.add(result_Bean);
 		}
 
 		return result_Bean;
