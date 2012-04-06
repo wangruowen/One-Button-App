@@ -49,7 +49,7 @@ public class MainOBAGUI {
 	public MainOBAGUI() {
 		this.controller = OBAController.getInstance();
 	}
-
+	
 	/**
 	 * Open the window.
 	 * 
@@ -168,11 +168,8 @@ public class MainOBAGUI {
 			}
 
 			/**
-			 * this method looks into the reservationList of the controller and
-			 * find the OBABean corresponding to each input TableItem
-			 * 
-			 * @param selectedItems
-			 *            the list of input TableItem
+			 * this method looks into the reservationList of the controller and find the OBABean corresponding to each input TableItem   
+			 * @param selectedItems the list of input TableItem 
 			 * @return
 			 */
 			private OBABean[] getOBAof(TableItem[] selectedItems) {
@@ -371,15 +368,15 @@ public class MainOBAGUI {
 		fd_text_dropbox_url.right = new FormAttachment(100, -10);
 		fd_text_dropbox_url.top = new FormAttachment(text_script_path, 6);
 		text_dropbox_url.setLayoutData(fd_text_dropbox_url);
-
+		
 		// Create button is clicked
 		Button btnCreate = new Button(compo2, SWT.NONE);
 		btnCreate.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// if (checkOBACreationParams() {
-				// controller.createOBA();
-				// }
+				//if (checkOBACreationParams() {
+				//	controller.createOBA();
+				//}
 			}
 		});
 		FormData fd_btnCreate = new FormData();

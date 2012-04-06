@@ -56,7 +56,6 @@ public class OBABean {
 		setImageName(imageName);
 		setUsername(username);
 		setPassword(password);
-		setRequestId(requestId);
 		this.ipAddress = ipAddress;
 		setClientPlatform(clientPlatform);
 		setStartTime(startTime);

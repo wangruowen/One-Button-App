@@ -73,7 +73,7 @@ public class LoginDialog {
 		fd_text2.left = new FormAttachment(UsernameText, 0, SWT.LEFT);
 		fd_text2.top = new FormAttachment(UsernameText, 6);
 		PasswordText.setLayoutData(fd_text2);
-
+		
 		final Button btnCheckButton = new Button(shlWelcomeToUse, SWT.CHECK);
 		FormData fd_btnCheckButton = new FormData();
 		fd_btnCheckButton.top = new FormAttachment(PasswordText, 6);
@@ -142,7 +142,7 @@ public class LoginDialog {
 				}
 			}
 		});
-
+		
 		FormData fd_btnLoginButton = new FormData();
 		fd_btnLoginButton.bottom = new FormAttachment(100, -10);
 		fd_btnLoginButton.width = 100;
@@ -152,7 +152,7 @@ public class LoginDialog {
 
 		shlWelcomeToUse.setDefaultButton(btnLoginButton);
 	}
-
+	
 	public void show() {
 		shlWelcomeToUse.open();
 		shlWelcomeToUse.layout();
