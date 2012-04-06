@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Calendar;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.TableEditor;
@@ -31,30 +32,22 @@ import org.eclipse.swt.widgets.Text;
 public class MainOBAGUI {
 
 	private Display display;
-	protected Shell shell;
+	private Shell shell;
 	private Table table;
 
-	private String username;
-	private String password;
 	private Table statusTable;
 	private TabFolder mainTabFolder;
 	private TabItem tbtmStatus;
-	private ArrayList<OBALogic> activeOBA;
 
-	private MainOBAGUI self_ref;
+	private Combo duration_combo;
+	private float[] all_possible_durations;
+
+	private OBAController controller;
 	private Text text_script_path;
 	private Text text_dropbox_url;
 
-	public MainOBAGUI(String username, String password) {
-		this.username = username;
-		this.password = password;
-		this.self_ref = this;
-		this.activeOBA = new ArrayList<OBALogic>();
-	}
-
-	public static void main(String[] args) {
-		MainOBAGUI testMainOBAGUI = new MainOBAGUI("dummy", "dummy");
-		testMainOBAGUI.open();
+	public MainOBAGUI() {
+		this.controller = OBAController.getInstance();
 	}
 
 	/**
@@ -65,7 +58,6 @@ public class MainOBAGUI {
 	public void open() {
 		display = Display.getDefault();
 		createContents();
-
 		// center the dialog screen to the monitor
 		Rectangle bounds = display.getBounds();
 		Rectangle rect = shell.getBounds();
@@ -140,6 +132,10 @@ public class MainOBAGUI {
 
 			@Override
 			public void mouseDoubleClick(MouseEvent e) {
+				if (e.button == 1) {
+					// When double click one OBA item, start launching it
+					start_one_OBA_instance(table.getSelection());
+				}
 			}
 		});
 		FormData fd_table = new FormData();
@@ -155,27 +151,34 @@ public class MainOBAGUI {
 			TableColumn column = new TableColumn(table, SWT.NONE);
 			column.setText(titles[i]);
 		}
+
 		loadPreconfiguredOBAItems(table);
+
 		for (int i = 0; i < titles.length; i++) {
 			table.getColumn(i).pack();
 		}
 
 		Button btnOba = new Button(compo1, SWT.NONE);
+
+		// Launch button is clicked
 		btnOba.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				TableItem[] selectedItems = table.getSelection();
-				if (selectedItems.length == 0) {
-					// No item has been selected
-					MessageBox dialog = new MessageBox(shell, SWT.ICON_ERROR
-							| SWT.OK);
-					dialog.setText("No Selection Found");
-					dialog.setMessage("Please select one OBA instance to start");
-					dialog.open();
-					return;
-				} else {
-					self_ref.start_one_OBA_instance(selectedItems);
-				}
+				start_one_OBA_instance(table.getSelection());
+			}
+
+			/**
+			 * this method looks into the reservationList of the controller and
+			 * find the OBABean corresponding to each input TableItem
+			 * 
+			 * @param selectedItems
+			 *            the list of input TableItem
+			 * @return
+			 */
+			private OBABean[] getOBAof(TableItem[] selectedItems) {
+				// TODO Auto-generated method stub
+
+				return null;
 			}
 		});
 
@@ -200,9 +203,8 @@ public class MainOBAGUI {
 		fd_lblDuration.bottom = new FormAttachment(btnCheckButton, -10);
 		lblDuration.setLayoutData(fd_lblDuration);
 
-		Combo combo = new Combo(compo1, SWT.NONE);
-		float[] all_possible_durations = new float[] { 0.5f, 0.75f, 1f, 2f, 3f,
-				4f, };
+		duration_combo = new Combo(compo1, SWT.NONE);
+		all_possible_durations = new float[] { 0.5f, 0.75f, 1f, 2f, 3f, 4f, };
 		String[] durations = new String[all_possible_durations.length];
 		for (int i = 0; i < all_possible_durations.length; i++) {
 			String show_hours = null;
@@ -220,13 +222,13 @@ public class MainOBAGUI {
 			}
 			durations[i] = show_hours;
 		}
-		combo.setItems(durations);
-		combo.select(0);
+		duration_combo.setItems(durations);
+		duration_combo.select(0);
 
 		FormData fd_combo = new FormData();
 		fd_combo.bottom = new FormAttachment(btnCheckButton, -6);
 		fd_combo.left = new FormAttachment(lblDuration, 8);
-		combo.setLayoutData(fd_combo);
+		duration_combo.setLayoutData(fd_combo);
 
 		Label lblStartTime = new Label(compo1, SWT.NONE);
 		fd_table.bottom = new FormAttachment(lblStartTime, -10);
@@ -294,7 +296,6 @@ public class MainOBAGUI {
 		/**
 		 * tab2.
 		 */
-
 		TabItem tbtmNew = new TabItem(mainTabFolder, SWT.NONE);
 		tbtmNew.setText("Create new OBA");
 
@@ -316,6 +317,8 @@ public class MainOBAGUI {
 		fd_combo_1.top = new FormAttachment(lblImage, 6);
 		fd_combo_1.left = new FormAttachment(0, 10);
 		combo_choose_image.setLayoutData(fd_combo_1);
+
+		// Now list all available images in this combo
 
 		Label lblImage_Duration = new Label(compo2, SWT.NONE);
 		FormData fd_lblImage_Duration = new FormData();
@@ -369,6 +372,24 @@ public class MainOBAGUI {
 		fd_text_dropbox_url.top = new FormAttachment(text_script_path, 6);
 		text_dropbox_url.setLayoutData(fd_text_dropbox_url);
 
+		// Create button is clicked
+		Button btnCreate = new Button(compo2, SWT.NONE);
+		btnCreate.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// if (checkOBACreationParams() {
+				// controller.createOBA();
+				// }
+			}
+		});
+		FormData fd_btnCreate = new FormData();
+		fd_btnCreate.top = new FormAttachment(100, -61);
+		fd_btnCreate.left = new FormAttachment(btnBrowseButton, 0, SWT.LEFT);
+		fd_btnCreate.bottom = new FormAttachment(100, -36);
+		fd_btnCreate.right = new FormAttachment(100, -45);
+		btnCreate.setLayoutData(fd_btnCreate);
+		btnCreate.setText("Create");
+
 		/**
 		 * tab3.
 		 */
@@ -389,8 +410,8 @@ public class MainOBAGUI {
 		statusTable.setHeaderVisible(true);
 		statusTable.setLinesVisible(true);
 
-		String[] status_Titles = { "Image ID", "Name", "Status",
-				"Remaining Time", "Auto Time Extend" };
+		String[] status_Titles = { "Image ID", "Name", "Status", "IP address",
+				"Username", "Password", "Remaining Time", "Auto Time Extend" };
 		for (int i = 0; i < status_Titles.length; i++) {
 			TableColumn column = new TableColumn(statusTable, SWT.NONE);
 			column.setText(status_Titles[i]);
@@ -398,74 +419,6 @@ public class MainOBAGUI {
 		for (int i = 0; i < status_Titles.length; i++) {
 			statusTable.getColumn(i).pack();
 		}
-	}
-
-	private void updateStatusTable(final OBALogic oba_instance) {
-		final TableItem one_status_Item = new TableItem(statusTable, SWT.NONE);
-		one_status_Item
-				.setText(0, Integer.toString(oba_instance.getImage_id()));
-		one_status_Item.setText(1, oba_instance.getImage_name());
-
-		final ProgressBar bar = new ProgressBar(statusTable, SWT.NONE);
-		TableEditor editor = new TableEditor(statusTable);
-		editor.grabHorizontal = editor.grabVertical = true;
-		editor.setEditor(bar, one_status_Item, 2);
-		bar.setMaximum(100);
-		bar.setMinimum(0);
-		bar.setSelection(0);
-
-		// Now create a new Thread for polling the status
-		new Thread() {
-			public void run() {
-				final int[] complete_percent = new int[1];
-				complete_percent[0] = 0;
-				while (true) {
-					// String[] status = oba_instance.getPercentageStatus();
-					// final int complete_percent = Integer.parseInt(status[0]);
-					// final String remain_time_str = status[1];
-
-					complete_percent[0]++;
-					if (complete_percent[0] >= 100) {
-						if (display.isDisposed())
-							return;
-						display.asyncExec(new Runnable() {
-							public void run() {
-								if (bar.isDisposed())
-									return;
-								bar.setSelection(complete_percent[0]);
-								// one_status_Item.setText(3, remain_time_str);
-							}
-						});
-						break;
-					} else if (complete_percent[0] >= 0) {
-						try {
-							Thread.sleep(10);
-						} catch (Throwable th) {
-						}
-						if (display.isDisposed())
-							return;
-						display.asyncExec(new Runnable() {
-							public void run() {
-								if (bar.isDisposed())
-									return;
-								bar.setSelection(complete_percent[0]);
-								// one_status_Item.setText(3, remain_time_str);
-							}
-						});
-					} else {
-						// Error
-						if (display.isDisposed())
-							return;
-						display.asyncExec(new Runnable() {
-							public void run() {
-								if (bar.isDisposed())
-									return;
-							}
-						});
-					}
-				}
-			}
-		}.start();
 	}
 
 	/*
@@ -488,33 +441,148 @@ public class MainOBAGUI {
 		item3.setText(0, "1913");
 		item3.setText(1, "centos_tunnel_mcnc");
 		item3.setText(2, "Our testing image3");
+		loadReservations(mainTable, controller.getCurrentReservations());
 	}
 
 	/**
-	 * This method is called when the "One Button Start" button is clicked.
+	 * This method is called when the "One Button Start" button is clicked, or
+	 * when the user double-clicks one OBA table item. This method is moved to
+	 * the controller This method is moved to the controller
 	 * 
 	 * @param selectedItems
 	 */
 	private void start_one_OBA_instance(TableItem[] selectedItems) {
-		// Get all information needed for making a reservation
-		int image_id = Integer.parseInt(selectedItems[0].getText(0));
-		String name = selectedItems[0].getText(1);
-		String startTime = "now";
-		String duration = "60";
-		mainTabFolder.setSelection(2);
+		if (selectedItems.length == 0) {
+			// No item has been selected
+			MessageBox dialog = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
+			dialog.setText("No Selection Found");
+			dialog.setMessage("Please select one OBA instance to start");
+			dialog.open();
+		} else {
+			// Get all information needed for making a reservation
+			final int image_id = Integer.parseInt(selectedItems[0].getText(0));
+			final String name = selectedItems[0].getText(1);
+			final Calendar startTime = Calendar.getInstance();
+			final int duration = (int) (all_possible_durations[duration_combo
+					.getSelectionIndex()] * 60);
+			// Now switch to the Current active OBA tab
+			mainTabFolder.setSelection(2);
 
-		OBALogic one_OBA_instance = new OBALogic(image_id, name, username,
-				password, OBALogic.Platform.Windows, startTime, duration);
-		activeOBA.add(one_OBA_instance);
+			final TableItem one_status_Item = new TableItem(statusTable,
+					SWT.NONE);
+			one_status_Item.setText(0, Integer.toString(image_id));
+			one_status_Item.setText(1, name);
 
-		updateStatusTable(one_OBA_instance);
-		// if (one_OBA_instance.makeReservation()) {
-		// // If succeed in making the reservation, we should
-		// // switch to the status tab to show the
-		// // current status of the reservation.
-		// updateStatusTable(one_OBA_instance);
-		// } else {
-		// // make resevation fail.
-		// }
+			final ProgressBar bar = new ProgressBar(statusTable, SWT.NONE);
+			TableEditor editor = new TableEditor(statusTable);
+			editor.grabHorizontal = editor.grabVertical = true;
+			editor.setEditor(bar, one_status_Item, 2);
+			bar.setMaximum(100);
+			bar.setMinimum(0);
+			bar.setSelection(0);
+
+			// Prepare a error message dialog
+			final MessageBox error_dialog = new MessageBox(shell,
+					SWT.ICON_ERROR | SWT.OK);
+			error_dialog.setText("Making Reservation Fails!");
+			error_dialog.setMessage("Cannot make the reservation.");
+
+			new Thread() {
+				public void run() {
+					OBABean new_OBA_bean = controller.launchOBA(image_id, name,
+							startTime, duration);
+					if (new_OBA_bean != null) {
+						// Now start polling status
+						final int[] complete_percent = new int[1];
+						complete_percent[0] = 0;
+						boolean ready = false;
+
+						while (true) {
+							String[] status = controller.VCLConnector
+									.getPercentageStatus(new_OBA_bean);
+
+							if (status[0].equals("error")) {
+								error_dialog.open();
+								break;
+							}
+
+							complete_percent[0] = Integer.parseInt(status[0]);
+							final String remain_time_str = status[1];
+
+							complete_percent[0]++;
+							if (complete_percent[0] >= 100) {
+								if (display.isDisposed())
+									return;
+								display.asyncExec(new Runnable() {
+									public void run() {
+										if (bar.isDisposed())
+											return;
+										bar.setSelection(complete_percent[0]);
+										one_status_Item.setText(3,
+												remain_time_str);
+									}
+								});
+								ready = true;
+								break;
+							} else if (complete_percent[0] >= 0) {
+								try {
+									Thread.sleep(10);
+								} catch (Throwable th) {
+								}
+								if (display.isDisposed())
+									return;
+								display.asyncExec(new Runnable() {
+									public void run() {
+										if (bar.isDisposed()) {
+											return;
+										}
+										bar.setSelection(complete_percent[0]);
+										one_status_Item.setText(3,
+												remain_time_str);
+									}
+								});
+							} else {
+								// Error
+								if (display.isDisposed())
+									return;
+								display.asyncExec(new Runnable() {
+									public void run() {
+										if (bar.isDisposed())
+											return;
+									}
+								});
+								error_dialog.open();
+							}
+						}
+
+						if (ready) {
+							String[] conn_data = controller.VCLConnector
+									.getConnectData(new_OBA_bean.getRequestId());
+							new_OBA_bean.setIpAddress(conn_data[0]);
+							new_OBA_bean.setUsername(conn_data[1]);
+							new_OBA_bean.setPassword(conn_data[2]);
+							new_OBA_bean.start();
+						}
+					}
+				}
+			}.start();
+			// OBALogic one_OBA_instance = new OBALogic(image_id, name,
+			// controller.getUsername(), controller.getPassword(),
+			// OBALogic.Platform.Windows, startTime, duration);
+			// OBABean one_OBA_instance = controller.launchOBA(image_id,
+			// name, OBALogic.Platform.Windows, startTime, duration);
+			// updateStatusTable(one_OBA_instance);
+		}
+	}
+
+	/**
+	 * TODO : fill the code This method take an ArrayList of OBABean and load it
+	 * into a table
+	 * 
+	 * @param reservationList
+	 */
+	private void loadReservations(Table mainTable,
+			ArrayList<OBABean> reservationList) {
+
 	}
 }

@@ -18,8 +18,10 @@ public class LoginDialog {
 	private static Text PasswordText;
 	private static Shell shlWelcomeToUse;
 	private static Display display;
+	private OBAController controller;
 
-	public static void main(String[] args) {
+	public LoginDialog() {
+		controller = OBAController.getInstance();
 		display = new Display();
 		shlWelcomeToUse = new Shell(display, SWT.CLOSE | SWT.TITLE | SWT.MIN);
 
@@ -72,6 +74,13 @@ public class LoginDialog {
 		fd_text2.top = new FormAttachment(UsernameText, 6);
 		PasswordText.setLayoutData(fd_text2);
 
+		final Button btnCheckButton = new Button(shlWelcomeToUse, SWT.CHECK);
+		FormData fd_btnCheckButton = new FormData();
+		fd_btnCheckButton.top = new FormAttachment(PasswordText, 6);
+		fd_btnCheckButton.left = new FormAttachment(UsernameText, 0, SWT.LEFT);
+		btnCheckButton.setLayoutData(fd_btnCheckButton);
+		btnCheckButton.setText("Save Password");
+
 		Button btnExitButton = new Button(shlWelcomeToUse, SWT.NONE);
 		btnExitButton.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -117,18 +126,23 @@ public class LoginDialog {
 					dialog.open();
 					return;
 				} else {
+					// if user chose to store his password
+					if (btnCheckButton.isEnabled()) {
+						controller.savePasswd(username, password);
+					}
+
 					// Now close this login dialog
 					if (!shlWelcomeToUse.isDisposed()) {
 						shlWelcomeToUse.dispose();
 					}
 					display.dispose();
-
-					// Now start the main OBA GUI
-					MainOBAGUI mainWindow = new MainOBAGUI(username, password);
-					mainWindow.open();
+					controller.setVCLConnector(username, password);
+					// Start the main OBA GUI
+					controller.showMainOBA();
 				}
 			}
 		});
+
 		FormData fd_btnLoginButton = new FormData();
 		fd_btnLoginButton.bottom = new FormAttachment(100, -10);
 		fd_btnLoginButton.width = 100;
@@ -136,14 +150,10 @@ public class LoginDialog {
 		btnLoginButton.setLayoutData(fd_btnLoginButton);
 		btnLoginButton.setText("Login");
 
-		Button btnCheckButton = new Button(shlWelcomeToUse, SWT.CHECK);
-		FormData fd_btnCheckButton = new FormData();
-		fd_btnCheckButton.top = new FormAttachment(PasswordText, 6);
-		fd_btnCheckButton.left = new FormAttachment(UsernameText, 0, SWT.LEFT);
-		btnCheckButton.setLayoutData(fd_btnCheckButton);
-		btnCheckButton.setText("Save Password");
-
 		shlWelcomeToUse.setDefaultButton(btnLoginButton);
+	}
+
+	public void show() {
 		shlWelcomeToUse.open();
 		shlWelcomeToUse.layout();
 		while (!shlWelcomeToUse.isDisposed()) {
