@@ -1,8 +1,9 @@
 public class OBAEntry {
 	
-	public void getImageInfo(String userName)
+	public int getImageInfo(String userName)
 	{
 		image image_list[]=imageManager.getData(userName);
+		return image_list.length;
 	}
 
 	public int getImageID(int index) {
