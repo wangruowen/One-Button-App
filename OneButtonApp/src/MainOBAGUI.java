@@ -545,6 +545,15 @@ public class MainOBAGUI {
 	 * one OBA application.
 	 */
 	private void loadPreconfiguredOBAItems(Table mainTable) {
+		OBAEntry[] entry_list = controller.getPreconfigedOBAs();
+
+		for (OBAEntry each_entry : entry_list) {
+			TableItem one_item = new TableItem(mainTable, SWT.NONE);
+			one_item.setText(0, each_entry.getImageID());
+			one_item.setText(1, each_entry.getImageName());
+			one_item.setText(2, each_entry.getImageDesc());
+		}
+
 		// TODO Auto-generated method stub
 		TableItem item = new TableItem(mainTable, SWT.NONE);
 		item.setText(0, "2422");
@@ -560,7 +569,6 @@ public class MainOBAGUI {
 		item3.setText(0, "1913");
 		item3.setText(1, "centos_tunnel_mcnc");
 		item3.setText(2, "Our testing image3");
-		loadReservations(mainTable, controller.getCurrentReservations());
 	}
 
 	/**

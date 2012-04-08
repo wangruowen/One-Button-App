@@ -97,13 +97,12 @@ public class OBAController {
 		}
 	}
 
-	/**
-	 * Get the active reservation from the SQLite Database if exist An active
-	 * reservation is an reservation which will be run default
-	 * 
-	 * @return The OBABean of this active reservation if exist and null if not
+	/*
+	 * This method returns the existing preconfigured OBA list from the database
 	 */
-	public OBABean getActiveReservation() {
+	public OBAEntry[] getPreconfigedOBAs() {
+		// TODO call the imageManager's getData
+
 		return null;
 	}
 
