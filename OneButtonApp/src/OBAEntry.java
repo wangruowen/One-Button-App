@@ -1,17 +1,28 @@
 public class OBAEntry {
+	
+	public void getImageInfo(String userName)
+	{
+		image image_list[]=imageManager.getData(userName);
+	}
 
-	public String getImageID() {
-		// TODO Auto-generated method stub
+	public int getImageID(int index) {
+		if(image_list.length!=0)
+		return image_list[i].imgID;
+		else
 		return null;
 	}
 
-	public String getImageName() {
-		// TODO Auto-generated method stub
+	public String getImageName(int index) {
+		if(image_list.length!=0)
+		return image_list[i].imgName;
+		else
 		return null;
 	}
 
-	public String getImageDesc() {
-		// TODO Auto-generated method stub
+	public String getImageDesc(int index) {
+		if(image_list.length!=0)
+		return image_list[i].imgDesc;
+		else
 		return null;
 	}
 }
