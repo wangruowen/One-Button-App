@@ -2,7 +2,6 @@ import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 
@@ -207,11 +206,10 @@ public class OBALogic {
 	 * 
 	 * @return the ArrayList of all the OBABean or null
 	 */
-	public ArrayList<OBABean> getCurrentReservations() {
-
+	public HashMap<Integer, OBABean> getCurrentReservations() {
 		Object[] params = new Object[0];
 		HashMap result = (HashMap) xmlRPCcall("XMLRPCgetRequestIds", params);
-		ArrayList<OBABean> reservationList = new ArrayList<OBABean>();
+		HashMap<Integer, OBABean> reservationList = new HashMap<Integer, OBABean>();
 		if (result.get("status").equals("success")) {
 			Object[] res = (Object[]) result.get("requests");
 			for (int i = 0; i < res.length; i++) {
@@ -247,7 +245,7 @@ public class OBALogic {
 				OBABean newBean = new OBABean(imageid, imagename, conn_data[1],
 						conn_data[2], requestid, conn_data[0],
 						Platform.Windows, start, end, duration, isReserved);
-				reservationList.add(newBean);
+				reservationList.put(requestid, newBean);
 			}
 
 			return reservationList;

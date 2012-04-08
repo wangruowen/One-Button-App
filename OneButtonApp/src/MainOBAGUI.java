@@ -32,7 +32,6 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 
 public class MainOBAGUI {
-
 	private Display display;
 	private Shell shell;
 	private Table table;
@@ -43,6 +42,7 @@ public class MainOBAGUI {
 
 	private Combo duration_combo;
 	private float[] all_possible_durations;
+	private HashMap<String, Integer> status_Titles;
 
 	private OBAController controller;
 	private Text text_script_path;
@@ -313,7 +313,7 @@ public class MainOBAGUI {
 
 		lblImage.setText("Please select the environment you want to use from the list:");
 
-		Combo combo_choose_image = new Combo(compo2, SWT.NONE);
+		final Combo combo_choose_image = new Combo(compo2, SWT.NONE);
 		FormData fd_combo_1 = new FormData();
 		fd_combo_1.right = new FormAttachment(100, -10);
 		fd_combo_1.top = new FormAttachment(lblImage, 6);
@@ -321,17 +321,27 @@ public class MainOBAGUI {
 		combo_choose_image.setLayoutData(fd_combo_1);
 
 		// Now list all available images in this combo
-		HashMap<Integer, String> image_hash_map = controller.VCLConnector
-				.getAvailableImages();
-		ArrayList<String> all_image_string_array = new ArrayList<String>();
-		for (Map.Entry<Integer, String> one_image_entry : image_hash_map
-				.entrySet()) {
-			all_image_string_array.add("Image ID: "
-					+ Integer.toString(one_image_entry.getKey()) + ", "
-					+ one_image_entry.getValue());
-		}
-		combo_choose_image.setItems(all_image_string_array
-				.toArray(new String[0]));
+		new Thread() {
+			public void run() {
+				HashMap<Integer, String> image_hash_map = controller.VCLConnector
+						.getAvailableImages();
+				final ArrayList<String> all_image_string_array = new ArrayList<String>();
+				for (Map.Entry<Integer, String> one_image_entry : image_hash_map
+						.entrySet()) {
+					all_image_string_array.add(one_image_entry.getValue());
+				}
+
+				if (display.isDisposed())
+					return;
+				display.asyncExec(new Runnable() {
+					public void run() {
+						combo_choose_image.setItems(all_image_string_array
+								.toArray(new String[0]));
+						combo_choose_image.select(0);
+					}
+				});
+			}
+		}.start();
 
 		Label lblImage_Duration = new Label(compo2, SWT.NONE);
 		FormData fd_lblImage_Duration = new FormData();
@@ -396,10 +406,10 @@ public class MainOBAGUI {
 			}
 		});
 		FormData fd_btnCreate = new FormData();
-		fd_btnCreate.top = new FormAttachment(100, -61);
 		fd_btnCreate.left = new FormAttachment(btnBrowseButton, 0, SWT.LEFT);
-		fd_btnCreate.bottom = new FormAttachment(100, -36);
-		fd_btnCreate.right = new FormAttachment(100, -45);
+		fd_btnCreate.bottom = new FormAttachment(100, -10);
+		fd_btnCreate.right = new FormAttachment(btnBrowseButton, 0, SWT.RIGHT);
+		fd_btnCreate.top = new FormAttachment(100, -40);
 		btnCreate.setLayoutData(fd_btnCreate);
 		btnCreate.setText("Create");
 
@@ -414,6 +424,28 @@ public class MainOBAGUI {
 		composite.setLayout(new FormLayout());
 
 		statusTable = new Table(composite, SWT.BORDER | SWT.FULL_SELECTION);
+		statusTable.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (e.button == 3) {
+					TableItem selectItem = statusTable.getSelection()[0];
+
+					Menu menu = new Menu(statusTable.getShell(), SWT.POP_UP);
+					MenuItem editItem = new MenuItem(menu, SWT.PUSH);
+					editItem.setText("Connect");
+					editItem.addSelectionListener(new StatusMenuLisnter(
+							selectItem));
+					MenuItem delItem = new MenuItem(menu, SWT.PUSH);
+					delItem.setText("End");
+
+					// draws pop up menu:
+					Point pt = new Point(e.x, e.y);
+					pt = table.toDisplay(pt);
+					menu.setLocation(pt.x, pt.y);
+					menu.setVisible(true);
+				}
+			}
+		});
 		FormData fd_table_1 = new FormData();
 		fd_table_1.bottom = new FormAttachment(100, -10);
 		fd_table_1.right = new FormAttachment(100, -10);
@@ -423,18 +455,88 @@ public class MainOBAGUI {
 		statusTable.setHeaderVisible(true);
 		statusTable.setLinesVisible(true);
 
-		String[] status_Titles = { "Image ID", "Name", "Status",
+		this.status_Titles = new HashMap<String, Integer>();
+		String[] tmp_titleString = new String[] { "Image ID", "Name", "Status",
 				"Remaining Time", "Auto Time Extend", "IP address", "Username",
-				"Password" };
-		for (int i = 0; i < status_Titles.length; i++) {
+				"Password", "Request ID" };
+		for (int i = 0; i < tmp_titleString.length; i++) {
+			status_Titles.put(tmp_titleString[i], i);
+
 			TableColumn column = new TableColumn(statusTable, SWT.NONE);
-			column.setText(status_Titles[i]);
-			if (status_Titles[i].equals("Status")) {
-				column.setWidth(100);
+			column.setText(tmp_titleString[i]);
+			if (tmp_titleString[i].equals("Status")) {
+				column.setWidth(1500);
 			}
 		}
-		for (int i = 0; i < status_Titles.length; i++) {
+		for (int i = 0; i < tmp_titleString.length; i++) {
 			statusTable.getColumn(i).pack();
+		}
+	}
+
+	private class StatusMenuLisnter extends SelectionAdapter {
+		private OBABean obaBean = null;
+		private TableItem selectItem;
+
+		public StatusMenuLisnter(TableItem selectItem) {
+			this.selectItem = selectItem;
+			String request_id_str = selectItem.getText(status_Titles
+					.get("Request ID"));
+			if (!request_id_str.equals("")) {
+				this.obaBean = controller.getOBAByRequestId(Integer
+						.parseInt(request_id_str));
+			}
+		}
+
+		public void widgetSelected(SelectionEvent event) {
+			if (obaBean == null) {
+				return;
+			}
+
+			String menuItemString = ((MenuItem) event.widget).getText();
+			if (menuItemString.equals("Connect")) {
+				obaBean.directStart();
+			} else if (menuItemString.equals("End")) {
+				new Thread() {
+					public void run() {
+						if (controller.VCLConnector.endRequest(obaBean
+								.getRequestId())) {
+							if (display.isDisposed())
+								return;
+							display.asyncExec(new Runnable() {
+								public void run() {
+									// Delete this table item
+									statusTable.remove(statusTable
+											.getSelectionIndices());
+
+									MessageBox dialog = new MessageBox(shell,
+											SWT.ICON_INFORMATION | SWT.OK);
+									dialog.setText("The reservation has been successfully ended. ");
+									dialog.setMessage("Request ID: "
+											+ obaBean.getRequestId()
+											+ ", Name: "
+											+ obaBean.getImageName());
+									dialog.open();
+								}
+							});
+						} else {
+							if (display.isDisposed())
+								return;
+							display.asyncExec(new Runnable() {
+								public void run() {
+									MessageBox dialog = new MessageBox(shell,
+											SWT.ICON_ERROR | SWT.OK);
+									dialog.setText("Failure in ending the reservation. ");
+									dialog.setMessage("Fail to end Reservation with Request ID: "
+											+ obaBean.getRequestId()
+											+ ", Name: "
+											+ obaBean.getImageName());
+									dialog.open();
+								}
+							});
+						}
+					}
+				}.start();
+			}
 		}
 	}
 
@@ -490,6 +592,8 @@ public class MainOBAGUI {
 			one_status_Item.setText(0, Integer.toString(image_id));
 			one_status_Item.setText(1, name);
 
+			final int item_index = statusTable.indexOf(one_status_Item);
+
 			final ProgressBar bar = new ProgressBar(statusTable, SWT.NONE);
 			TableEditor editor = new TableEditor(statusTable);
 			editor.grabHorizontal = editor.grabVertical = true;
@@ -506,8 +610,8 @@ public class MainOBAGUI {
 
 			new Thread() {
 				public void run() {
-					OBABean new_OBA_bean = controller.launchOBA(image_id, name,
-							startTime, duration);
+					final OBABean new_OBA_bean = controller.launchOBA(image_id,
+							name, startTime, duration);
 					if (new_OBA_bean != null) {
 						// Now start polling status
 						final int[] complete_percent = new int[1];
@@ -519,6 +623,8 @@ public class MainOBAGUI {
 									.getPercentageStatus(new_OBA_bean);
 
 							if (status[0].equals("error")) {
+								// Delete the tableitem
+								statusTable.remove(item_index);
 								error_dialog.open();
 								break;
 							}
@@ -566,6 +672,8 @@ public class MainOBAGUI {
 									public void run() {
 										if (bar.isDisposed())
 											return;
+										// Delete the tableitem
+										statusTable.remove(item_index);
 									}
 								});
 								error_dialog.open();
@@ -573,22 +681,51 @@ public class MainOBAGUI {
 						}
 
 						if (ready) {
-							String[] conn_data = controller.VCLConnector
+							final String[] conn_data = controller.VCLConnector
 									.getConnectData(new_OBA_bean.getRequestId());
 							new_OBA_bean.setIpAddress(conn_data[0]);
 							new_OBA_bean.setUsername(conn_data[1]);
 							new_OBA_bean.setPassword(conn_data[2]);
+
+							// Now update the statusTable item to show all
+							// available info
+							if (display.isDisposed())
+								return;
+							display.asyncExec(new Runnable() {
+								public void run() {
+									if (bar.isDisposed())
+										return;
+									one_status_Item.setText(
+											status_Titles.get("IP address"),
+											conn_data[0]);
+									one_status_Item.setText(
+											status_Titles.get("Username"),
+											conn_data[1]);
+									one_status_Item.setText(status_Titles
+											.get("Request ID"), Integer
+											.toString(new_OBA_bean
+													.getRequestId()));
+								}
+							});
+
 							new_OBA_bean.start();
 						}
+					} else {
+						// No OBA is created, which means error
+						if (display.isDisposed())
+							return;
+						display.asyncExec(new Runnable() {
+							public void run() {
+								if (bar.isDisposed())
+									return;
+								// Delete the tableitem
+								statusTable.remove(item_index);
+							}
+						});
+						error_dialog.open();
 					}
 				}
 			}.start();
-			// OBALogic one_OBA_instance = new OBALogic(image_id, name,
-			// controller.getUsername(), controller.getPassword(),
-			// OBALogic.Platform.Windows, startTime, duration);
-			// OBABean one_OBA_instance = controller.launchOBA(image_id,
-			// name, OBALogic.Platform.Windows, startTime, duration);
-			// updateStatusTable(one_OBA_instance);
 		}
 	}
 
@@ -599,7 +736,7 @@ public class MainOBAGUI {
 	 * @param reservationList
 	 */
 	private void loadReservations(Table mainTable,
-			ArrayList<OBABean> reservationList) {
+			HashMap<Integer, OBABean> reservationList) {
 
 	}
 }

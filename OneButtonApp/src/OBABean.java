@@ -181,12 +181,25 @@ public class OBABean {
 			// Wait for a short time after establishing a reservation and
 			// connecting to the host
 			// since the VCL needs time to process remote IP in its firewall.
-			Thread.sleep(30000); // 30 second wait seems to work well for both
-									// RDP and SSH.
+			Thread.sleep(5000); // 30 second wait seems to work well for both
+								// RDP and SSH.
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 
+		// Determine if you need to connect to the host via RDP or SSH
+		if (RDP.isHostRDPReady(getIpAddress())) {
+			rdpLaunch(conn_data); // use RDP to login to the terminal
+		} else {
+			termLaunch(conn_data); // use ssh to login to the terminal
+		}
+
+		// Signify that the OBA is reserved
+		setReservedIndicator(true);
+	}
+
+	public void directStart() {
+		String[] conn_data = { getIpAddress(), getUsername(), getPassword() };
 		// Determine if you need to connect to the host via RDP or SSH
 		if (RDP.isHostRDPReady(getIpAddress())) {
 			rdpLaunch(conn_data); // use RDP to login to the terminal

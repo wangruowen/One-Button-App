@@ -1,10 +1,9 @@
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 
 public class OBAController {
 	private static OBAController instance = null;
-	private ArrayList<OBABean> reservationsList;
+	private HashMap<Integer, OBABean> reservationsList;
 
 	// public for the test purpose, need to change back to private after that.
 	public OBALogic VCLConnector;
@@ -37,6 +36,7 @@ public class OBAController {
 	public void initialize() {
 		OBADBManager DBManager = OBADBManager.getInstance();
 		HashMap<String, String> savedUserInfos = DBManager.getRememberPasswd();
+		this.reservationsList = new HashMap<Integer, OBABean>();
 		if (loginWithSavePasswd(savedUserInfos)) {
 			setVCLConnector(username, password);
 			showMainOBA();
@@ -88,8 +88,8 @@ public class OBAController {
 	 * 
 	 * @return reservationsList
 	 */
-	public ArrayList<OBABean> getCurrentReservations() {
-		if (reservationsList != null) {
+	public HashMap<Integer, OBABean> getCurrentReservations() {
+		if (reservationsList == null) {
 			reservationsList = VCLConnector.getCurrentReservations();
 			return reservationsList;
 		} else {
@@ -129,7 +129,7 @@ public class OBAController {
 			result_Bean = new OBABean(image_id, image_name, username, password,
 					request_id, null, Platform.Windows, start_Time, null,
 					duration, false);
-			reservationsList.add(result_Bean);
+			reservationsList.put(request_id, result_Bean);
 		}
 
 		return result_Bean;
@@ -167,7 +167,13 @@ public class OBAController {
 	 * @param id
 	 * @return
 	 */
-	public OBABean getOBAById(int id) {
-		return null;
+	public OBABean getOBAByRequestId(int id) {
+		OBABean resultBean = null;
+
+		if (reservationsList != null) {
+			resultBean = reservationsList.get(id);
+		}
+
+		return resultBean;
 	}
 }
