@@ -4,6 +4,7 @@ import java.util.HashMap;
 public class OBAController {
 	private static OBAController instance = null;
 	private HashMap<Integer, OBABean> reservationsList;
+	private HashMap<String, Integer> reverseOBAentryHashMap;
 
 	// public for the test purpose, need to change back to private after that.
 	public OBALogic VCLConnector;
@@ -37,6 +38,7 @@ public class OBAController {
 		OBADBManager DBManager = OBADBManager.getInstance();
 		HashMap<String, String> savedUserInfos = DBManager.getRememberPasswd();
 		this.reservationsList = new HashMap<Integer, OBABean>();
+		this.reverseOBAentryHashMap = new HashMap<String, Integer>();
 		if (loginWithSavePasswd(savedUserInfos)) {
 			setVCLConnector(username, password);
 			showMainOBA();
@@ -100,7 +102,7 @@ public class OBAController {
 	/*
 	 * This method returns the existing preconfigured OBA list from the database
 	 */
-	public OBAEntry[] getPreconfigedOBAs() {
+	public OBAEntry[] getPreconfigedOBAEntries() {
 		// TODO call the imageManager's getData
 
 		return null;
@@ -174,5 +176,15 @@ public class OBAController {
 		}
 
 		return resultBean;
+	}
+
+	public void createOBAentry(int image_id, String image_name,
+			String image_desc) {
+		// TODO Auto-generated method stub
+
+	}
+
+	public void putReverseOBAentryHashMap(String image_name, int image_id) {
+		this.reverseOBAentryHashMap.put(image_name, image_id);
 	}
 }

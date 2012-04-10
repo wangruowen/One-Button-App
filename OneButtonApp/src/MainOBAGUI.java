@@ -5,6 +5,8 @@ import java.util.Map;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.TableEditor;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -47,6 +49,7 @@ public class MainOBAGUI {
 	private OBAController controller;
 	private Text text_script_path;
 	private Text text_dropbox_url;
+	private Text desc_text;
 
 	public MainOBAGUI() {
 		this.controller = OBAController.getInstance();
@@ -152,6 +155,7 @@ public class MainOBAGUI {
 		for (int i = 0; i < titles.length; i++) {
 			TableColumn column = new TableColumn(table, SWT.NONE);
 			column.setText(titles[i]);
+
 		}
 
 		loadPreconfiguredOBAItems(table);
@@ -328,6 +332,9 @@ public class MainOBAGUI {
 				final ArrayList<String> all_image_string_array = new ArrayList<String>();
 				for (Map.Entry<Integer, String> one_image_entry : image_hash_map
 						.entrySet()) {
+					controller.putReverseOBAentryHashMap(
+							one_image_entry.getValue(),
+							one_image_entry.getKey());
 					all_image_string_array.add(one_image_entry.getValue());
 				}
 
@@ -343,16 +350,30 @@ public class MainOBAGUI {
 			}
 		}.start();
 
+		Label lblDescription = new Label(compo2, SWT.NONE);
+		FormData fd_lblDescription = new FormData();
+		fd_lblDescription.top = new FormAttachment(combo_choose_image, 10);
+		fd_lblDescription.left = new FormAttachment(lblImage, 0, SWT.LEFT);
+		lblDescription.setLayoutData(fd_lblDescription);
+		lblDescription.setText("Description:");
+
+		desc_text = new Text(compo2, SWT.BORDER);
+		FormData fd_text = new FormData();
+		fd_text.top = new FormAttachment(combo_choose_image, 6);
+		fd_text.right = new FormAttachment(100, -10);
+		fd_text.left = new FormAttachment(lblDescription, 6);
+		desc_text.setLayoutData(fd_text);
+
 		Label lblImage_Duration = new Label(compo2, SWT.NONE);
 		FormData fd_lblImage_Duration = new FormData();
-		fd_lblImage_Duration.top = new FormAttachment(combo_choose_image, 10);
+		fd_lblImage_Duration.top = new FormAttachment(lblDescription, 10);
 		fd_lblImage_Duration.left = new FormAttachment(lblImage, 0, SWT.LEFT);
 		lblImage_Duration.setLayoutData(fd_lblImage_Duration);
 		lblImage_Duration.setText("Default duration: ");
 
 		Combo combo_1 = new Combo(compo2, SWT.NONE);
 		FormData fd_combo_2 = new FormData();
-		fd_combo_2.top = new FormAttachment(combo_choose_image, 6);
+		fd_combo_2.top = new FormAttachment(lblDescription, 6);
 		fd_combo_2.left = new FormAttachment(lblImage_Duration, 6);
 		combo_1.setLayoutData(fd_combo_2);
 
@@ -401,7 +422,7 @@ public class MainOBAGUI {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				// if (checkOBACreationParams() {
-				// controller.createOBA();
+				// controller.createOBAentry(image_id, image_name, image_desc);
 				// }
 			}
 		});
@@ -437,6 +458,8 @@ public class MainOBAGUI {
 							selectItem));
 					MenuItem delItem = new MenuItem(menu, SWT.PUSH);
 					delItem.setText("End");
+					delItem.addSelectionListener(new StatusMenuLisnter(
+							selectItem));
 
 					// draws pop up menu:
 					Point pt = new Point(e.x, e.y);
@@ -511,7 +534,7 @@ public class MainOBAGUI {
 									MessageBox dialog = new MessageBox(shell,
 											SWT.ICON_INFORMATION | SWT.OK);
 									dialog.setText("The reservation has been successfully ended. ");
-									dialog.setMessage("Request ID: "
+									dialog.setMessage("Reservation ends. Request ID: "
 											+ obaBean.getRequestId()
 											+ ", Name: "
 											+ obaBean.getImageName());
@@ -545,14 +568,14 @@ public class MainOBAGUI {
 	 * one OBA application.
 	 */
 	private void loadPreconfiguredOBAItems(Table mainTable) {
-		OBAEntry[] entry_list = controller.getPreconfigedOBAs();
-
-		for (OBAEntry each_entry : entry_list) {
-			TableItem one_item = new TableItem(mainTable, SWT.NONE);
-			one_item.setText(0, each_entry.getImageID());
-			one_item.setText(1, each_entry.getImageName());
-			one_item.setText(2, each_entry.getImageDesc());
-		}
+		// OBAEntry[] entry_list = controller.getPreconfigedOBAs();
+		//
+		// for (OBAEntry each_entry : entry_list) {
+		// TableItem one_item = new TableItem(mainTable, SWT.NONE);
+		// one_item.setText(0, each_entry.getImageID());
+		// one_item.setText(1, each_entry.getImageName());
+		// one_item.setText(2, each_entry.getImageDesc());
+		// }
 
 		// TODO Auto-generated method stub
 		TableItem item = new TableItem(mainTable, SWT.NONE);
@@ -603,9 +626,23 @@ public class MainOBAGUI {
 			final int item_index = statusTable.indexOf(one_status_Item);
 
 			final ProgressBar bar = new ProgressBar(statusTable, SWT.NONE);
-			TableEditor editor = new TableEditor(statusTable);
+			final TableEditor editor = new TableEditor(statusTable);
 			editor.grabHorizontal = editor.grabVertical = true;
 			editor.setEditor(bar, one_status_Item, 2);
+
+			// Add disposelistener to the one_status_item, so that when the
+			// table item is deleted,
+			// its editor should be deleted too.
+			one_status_Item.addDisposeListener(new DisposeListener() {
+
+				@Override
+				public void widgetDisposed(DisposeEvent arg0) {
+					// TODO Auto-generated method stub
+					bar.dispose();
+					editor.dispose();
+				}
+			});
+
 			bar.setMaximum(100);
 			bar.setMinimum(0);
 			bar.setSelection(0);
@@ -709,6 +746,17 @@ public class MainOBAGUI {
 									one_status_Item.setText(
 											status_Titles.get("Username"),
 											conn_data[1]);
+									if (conn_data[2]
+											.equals(controller.VCLConnector
+													.getPassword())) {
+										one_status_Item.setText(
+												status_Titles.get("Password"),
+												"(use your campus password)");
+									} else {
+										one_status_Item.setText(
+												status_Titles.get("Password"),
+												conn_data[2]);
+									}
 									one_status_Item.setText(status_Titles
 											.get("Request ID"), Integer
 											.toString(new_OBA_bean

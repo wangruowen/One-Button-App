@@ -395,4 +395,12 @@ public class OBALogic {
 				remain_time_str };
 	}
 
+	public String getUsername() {
+		return username;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
 }

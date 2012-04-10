@@ -26,6 +26,10 @@ public class OBABean {
 	private Platform clientPlatform;
 	private boolean isReserved;
 	private int initialLoadingTime;
+	private int login_mode;
+
+	public static final int SSH_LOGIN = 0;
+	public static final int RDP_LOGIN = 1;
 
 	/**
 	 * Default Constructor
@@ -200,11 +204,20 @@ public class OBABean {
 
 	public void directStart() {
 		String[] conn_data = { getIpAddress(), getUsername(), getPassword() };
-		// Determine if you need to connect to the host via RDP or SSH
-		if (RDP.isHostRDPReady(getIpAddress())) {
-			rdpLaunch(conn_data); // use RDP to login to the terminal
+
+		if (this.login_mode == SSH_LOGIN) {
+			termLaunch(conn_data);
+		} else if (this.login_mode == RDP_LOGIN) {
+			rdpLaunch(conn_data);
 		} else {
-			termLaunch(conn_data); // use ssh to login to the terminal
+			// Determine if you need to connect to the host via RDP or SSH
+			if (RDP.isHostRDPReady(getIpAddress())) {
+				this.login_mode = RDP_LOGIN;
+				rdpLaunch(conn_data); // use RDP to login to the terminal
+			} else {
+				this.login_mode = SSH_LOGIN;
+				termLaunch(conn_data); // use ssh to login to the terminal
+			}
 		}
 
 		// Signify that the OBA is reserved
@@ -382,6 +395,14 @@ public class OBABean {
 
 	public void setInitialLoadingTime(int remain_time) {
 		this.initialLoadingTime = remain_time;
+	}
+
+	public int getLogin_mode() {
+		return login_mode;
+	}
+
+	public void setLogin_mode(int login_mode) {
+		this.login_mode = login_mode;
 	}
 
 	// public static void main(String[] args){
