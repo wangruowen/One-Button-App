@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.eclipse.swt.SWT;
@@ -151,7 +152,7 @@ public class MainOBAGUI {
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 
-		String[] titles = { "Image ID", "Name", "Description" };
+		String[] titles = { "OBA ID", "Name", "Description" };
 		for (int i = 0; i < titles.length; i++) {
 			TableColumn column = new TableColumn(table, SWT.NONE);
 			column.setText(titles[i]);
@@ -229,7 +230,7 @@ public class MainOBAGUI {
 			durations[i] = show_hours;
 		}
 		duration_combo.setItems(durations);
-		duration_combo.select(0);
+		duration_combo.select(2);
 
 		FormData fd_combo = new FormData();
 		fd_combo.bottom = new FormAttachment(btnCheckButton, -6);
@@ -327,7 +328,7 @@ public class MainOBAGUI {
 		// Now list all available images in this combo
 		new Thread() {
 			public void run() {
-				HashMap<Integer, String> image_hash_map = controller.VCLConnector
+				LinkedHashMap<Integer, String> image_hash_map = controller.VCLConnector
 						.getAvailableImages();
 				final ArrayList<String> all_image_string_array = new ArrayList<String>();
 				for (Map.Entry<Integer, String> one_image_entry : image_hash_map
@@ -421,9 +422,20 @@ public class MainOBAGUI {
 		btnCreate.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// if (checkOBACreationParams() {
-				// controller.createOBAentry(image_id, image_name, image_desc);
-				// }
+				String image_name = combo_choose_image.getText();
+				String image_desc = desc_text.getText();
+				int image_id = controller.getImageIDByImageName(image_name);
+				controller.createOBAentry(image_id, image_name, image_desc);
+
+				// Now we need to add a new TableItem on the table on the first
+				// tab
+				TableItem newOBAItem = new TableItem(table, SWT.NONE);
+				newOBAItem.setText(0,
+						Integer.toString(table.indexOf(newOBAItem) + 1));
+				newOBAItem.setText(1, image_name);
+				newOBAItem.setText(2, image_desc);
+				// Now switch to the first tab
+				mainTabFolder.setSelection(0);
 			}
 		});
 		FormData fd_btnCreate = new FormData();
@@ -568,30 +580,29 @@ public class MainOBAGUI {
 	 * one OBA application.
 	 */
 	private void loadPreconfiguredOBAItems(Table mainTable) {
-		// OBAEntry[] entry_list = controller.getPreconfigedOBAs();
+		OBAEntry[] entry_list = controller.getPreconfigedOBAEntries();
+
+		for (int i = 0; i < entry_list.length; i++) {
+			TableItem one_item = new TableItem(mainTable, SWT.NONE);
+			one_item.setText(0, Integer.toString(i + 1));
+			one_item.setText(1, entry_list[i].getImageName());
+			one_item.setText(2, entry_list[i].getImageDesc());
+		}
 		//
-		// for (OBAEntry each_entry : entry_list) {
-		// TableItem one_item = new TableItem(mainTable, SWT.NONE);
-		// one_item.setText(0, each_entry.getImageID());
-		// one_item.setText(1, each_entry.getImageName());
-		// one_item.setText(2, each_entry.getImageDesc());
-		// }
-
-		// TODO Auto-generated method stub
-		TableItem item = new TableItem(mainTable, SWT.NONE);
-		item.setText(0, "2422");
-		item.setText(1, "VCL2.2.1 SandBox");
-		item.setText(2, "Our testing image1");
-
-		TableItem item2 = new TableItem(mainTable, SWT.NONE);
-		item2.setText(0, "2813");
-		item2.setText(1, "centos_tunnel_main_campus");
-		item2.setText(2, "Our testing image2");
-
-		TableItem item3 = new TableItem(mainTable, SWT.NONE);
-		item3.setText(0, "1913");
-		item3.setText(1, "centos_tunnel_mcnc");
-		item3.setText(2, "Our testing image3");
+		// TableItem item = new TableItem(mainTable, SWT.NONE);
+		// item.setText(0, "2422");
+		// item.setText(1, "VCL2.2.1 SandBox");
+		// item.setText(2, "Our testing image1");
+		//
+		// TableItem item2 = new TableItem(mainTable, SWT.NONE);
+		// item2.setText(0, "2813");
+		// item2.setText(1, "centos_tunnel_main_campus");
+		// item2.setText(2, "Our testing image2");
+		//
+		// TableItem item3 = new TableItem(mainTable, SWT.NONE);
+		// item3.setText(0, "1913");
+		// item3.setText(1, "centos_tunnel_mcnc");
+		// item3.setText(2, "Our testing image3");
 	}
 
 	/**
@@ -610,8 +621,12 @@ public class MainOBAGUI {
 			dialog.open();
 		} else {
 			// Get all information needed for making a reservation
-			final int image_id = Integer.parseInt(selectedItems[0].getText(0));
-			final String name = selectedItems[0].getText(1);
+			int oba_id = Integer.parseInt(selectedItems[0].getText(0));
+			final OBAEntry selectedOBAEntry = controller
+					.getOBAEntryByTableID(oba_id - 1);
+
+			final int image_id = selectedOBAEntry.getImageID();
+			final String name = selectedOBAEntry.getImageName();
 			final Calendar startTime = Calendar.getInstance();
 			final int duration = (int) (all_possible_durations[duration_combo
 					.getSelectionIndex()] * 60);
@@ -655,8 +670,8 @@ public class MainOBAGUI {
 
 			new Thread() {
 				public void run() {
-					final OBABean new_OBA_bean = controller.launchOBA(image_id,
-							name, startTime, duration);
+					final OBABean new_OBA_bean = controller.launchOBA(
+							selectedOBAEntry, startTime, duration);
 					if (new_OBA_bean != null) {
 						// Now start polling status
 						final int[] complete_percent = new int[1];

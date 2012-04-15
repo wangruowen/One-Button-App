@@ -28,6 +28,8 @@ public class OBABean {
 	private int initialLoadingTime;
 	private int login_mode;
 
+	private OBAEntry ownerEntry;
+
 	public static final int SSH_LOGIN = 0;
 	public static final int RDP_LOGIN = 1;
 
@@ -54,7 +56,8 @@ public class OBABean {
 	public OBABean(int imageId, String imageName, final String username,
 			final String password, int requestId, String ipAddress,
 			Platform clientPlatform, Calendar startTime, Calendar endTime,
-			long duration, boolean isReserved) {
+			long duration, int login_mode, boolean isReserved,
+			OBAEntry ownerEntry) {
 
 		setImageId(imageId);
 		setImageName(imageName);
@@ -68,6 +71,8 @@ public class OBABean {
 		setDuration(duration);
 		this.isReserved = isReserved;
 		this.initialLoadingTime = -1;
+		this.login_mode = login_mode;
+		this.ownerEntry = ownerEntry;
 	}
 
 	/**
@@ -179,8 +184,6 @@ public class OBABean {
 	 * Start the connection to the remote host/image
 	 */
 	public void start() {
-		String[] conn_data = { getIpAddress(), getUsername(), getPassword() };
-
 		try {
 			// Wait for a short time after establishing a reservation and
 			// connecting to the host
@@ -190,16 +193,7 @@ public class OBABean {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-
-		// Determine if you need to connect to the host via RDP or SSH
-		if (RDP.isHostRDPReady(getIpAddress())) {
-			rdpLaunch(conn_data); // use RDP to login to the terminal
-		} else {
-			termLaunch(conn_data); // use ssh to login to the terminal
-		}
-
-		// Signify that the OBA is reserved
-		setReservedIndicator(true);
+		directStart();
 	}
 
 	public void directStart() {
@@ -213,9 +207,11 @@ public class OBABean {
 			// Determine if you need to connect to the host via RDP or SSH
 			if (RDP.isHostRDPReady(getIpAddress())) {
 				this.login_mode = RDP_LOGIN;
+				this.ownerEntry.setLoginMode(RDP_LOGIN);
 				rdpLaunch(conn_data); // use RDP to login to the terminal
 			} else {
 				this.login_mode = SSH_LOGIN;
+				this.ownerEntry.setLoginMode(SSH_LOGIN);
 				termLaunch(conn_data); // use ssh to login to the terminal
 			}
 		}
@@ -404,18 +400,4 @@ public class OBABean {
 	public void setLogin_mode(int login_mode) {
 		this.login_mode = login_mode;
 	}
-
-	// public static void main(String[] args){
-	// OBABean oba = new OBABean();
-	//
-	// oba.setClientPlatform(Platform.Windows);
-	// oba.setUsername("arodrig3");
-	// oba.setPassword("JHdf9v");
-	// oba.setIpAddress("152.1.13.225");
-	//
-	// oba.setIpAddress("152.1.13.209");
-	// oba.setPassword("flipper1");
-	//
-	// oba.start();
-	// }
 }

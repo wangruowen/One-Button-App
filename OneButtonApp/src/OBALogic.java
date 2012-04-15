@@ -4,6 +4,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.XmlRpcRequest;
@@ -242,9 +243,11 @@ public class OBALogic {
 					conn_data[1] = null;
 					conn_data[2] = null;
 				}
+
 				OBABean newBean = new OBABean(imageid, imagename, conn_data[1],
 						conn_data[2], requestid, conn_data[0],
-						Platform.Windows, start, end, duration, isReserved);
+						Platform.Windows, start, end, duration, -1, isReserved,
+						null);
 				reservationList.put(requestid, newBean);
 			}
 
@@ -317,21 +320,21 @@ public class OBALogic {
 
 	/**
 	 * This method send a request to the server to get all the accessible Images
-	 * for this user
+	 * for this user. We must use LinkedHashMap to keep the order.
 	 * 
 	 * @return HashMap <"ImageID", "ImageName">
 	 */
-	public HashMap<Integer, String> getAvailableImages() {
+	public LinkedHashMap<Integer, String> getAvailableImages() {
 		Object[] params = new Object[0];
 		Object[] result = (Object[]) xmlRPCcall("XMLRPCgetImages", params);
-		HashMap<Integer, String> res = new HashMap<Integer, String>(
+		LinkedHashMap<Integer, String> res = new LinkedHashMap<Integer, String>(
 				result.length);
 		for (int i = 0; i < result.length; i++) {
 			res.put((Integer) ((HashMap) result[i]).get("id"),
 					(String) ((HashMap) result[i]).get("name"));
 			// System.out.print(((HashMap) result[i]).get("name") + "\n");
-			// res.put((Integer) result[i].get("id"), (String)
-			// result[i].get("image"));
+			// res.put((Integer) result[i].get("id"),
+			// (String) result[i].get("image"));
 		}
 
 		return res;
