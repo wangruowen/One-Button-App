@@ -73,7 +73,7 @@ public class LoginDialog {
 		fd_text2.left = new FormAttachment(UsernameText, 0, SWT.LEFT);
 		fd_text2.top = new FormAttachment(UsernameText, 6);
 		PasswordText.setLayoutData(fd_text2);
-		
+
 		final Button btnCheckButton = new Button(shlWelcomeToUse, SWT.CHECK);
 		FormData fd_btnCheckButton = new FormData();
 		fd_btnCheckButton.top = new FormAttachment(PasswordText, 6);
@@ -115,7 +115,7 @@ public class LoginDialog {
 					dialog.open();
 					return;
 				}
-				// TODO We need to use VCL XML RPC to check whether the
+				// We need to use VCL XML RPC to check whether the
 				// username/password are correct
 				OBALogic oba_inst = new OBALogic(username, password);
 				if (!oba_inst.loginCheck()) {
@@ -127,7 +127,7 @@ public class LoginDialog {
 					return;
 				} else {
 					// if user chose to store his password
-					if (btnCheckButton.isEnabled()) {
+					if (btnCheckButton.getSelection()) {
 						controller.savePasswd(username, password);
 					}
 
@@ -142,7 +142,7 @@ public class LoginDialog {
 				}
 			}
 		});
-		
+
 		FormData fd_btnLoginButton = new FormData();
 		fd_btnLoginButton.bottom = new FormAttachment(100, -10);
 		fd_btnLoginButton.width = 100;
@@ -152,7 +152,7 @@ public class LoginDialog {
 
 		shlWelcomeToUse.setDefaultButton(btnLoginButton);
 	}
-	
+
 	public void show() {
 		shlWelcomeToUse.open();
 		shlWelcomeToUse.layout();

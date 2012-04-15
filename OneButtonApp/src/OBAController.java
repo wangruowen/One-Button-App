@@ -179,8 +179,14 @@ public class OBAController {
 	 * @param password
 	 */
 	public void setVCLConnector(String username, String password) {
-		// TODO Auto-generated method stub
 		VCLConnector = new OBALogic(username, password);
+
+		if (this.username == null) {
+			this.username = username;
+		}
+		if (this.password == null) {
+			this.password = password;
+		}
 	}
 
 	/**

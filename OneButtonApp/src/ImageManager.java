@@ -68,7 +68,7 @@ public class ImageManager {
 			DatabaseMetaData dbm = conn.getMetaData();
 			ResultSet rs1 = dbm.getTables(null, null, "image", null);
 			if (!rs1.next()) {
-				stat.executeUpdate("create table image (user_name, image_id, image_name, image_desc, login_mode);");
+				stat.executeUpdate("create table image (user_name VARCHAR(25) NOT NULL, image_id INTEGER, image_name VARCHAR(100), image_desc TEXT(200), login_mode INTEGER);");
 			}
 			PreparedStatement prep = conn
 					.prepareStatement("insert into image values (?, ?, ?, ?, ?);");
