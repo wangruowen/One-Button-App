@@ -201,7 +201,7 @@ public class OBABean {
 	 * Start the connection to the remote host/image
 	 */
 	public void start() {
-		/*try {
+		try {
 			// Wait for a short time after establishing a reservation and
 			// connecting to the host
 			// since the VCL needs time to process remote IP in its firewall.
@@ -209,7 +209,7 @@ public class OBABean {
 								// RDP and SSH.
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-		}*/
+		}
 		directStart();
 	}
 

@@ -1,3 +1,12 @@
+import java.awt.AWTException;
+import java.awt.Image;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -5,6 +14,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import javax.print.attribute.standard.SheetCollate;
+import javax.swing.SwingUtilities;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.TableEditor;
@@ -14,6 +26,8 @@ import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
@@ -40,7 +54,6 @@ public class MainOBAGUI {
 	private Display display;
 	private Shell shell;
 	private Table table;
-
 	private Table statusTable;
 	private TabFolder mainTabFolder;
 	private TabItem tbtmStatus;
@@ -59,8 +72,11 @@ public class MainOBAGUI {
 	private Text text_dropbox_url;
 	private Text desc_text;
 
+	private TrayIcon trayIcon;
+
 	public MainOBAGUI() {
 		this.controller = OBAController.getInstance();
+		startTrayIcon();
 	}
 
 	/**
@@ -78,14 +94,150 @@ public class MainOBAGUI {
 		int x = bounds.x + (bounds.width - rect.width) / 2;
 		int y = bounds.y + (bounds.height - rect.height) / 2;
 		shell.setLocation(x, y);
+		shell.addShellListener(new ShellListener() {
+
+			public void shellActivated(ShellEvent event) {
+				System.out.println("activate");
+			}
+
+			public void shellClosed(ShellEvent arg0) {
+				System.out.println("close");
+				System.exit(0);
+			}
+
+			public void shellDeactivated(ShellEvent arg0) {
+				System.out.println("Deactivated");
+			}
+
+			public void shellDeiconified(ShellEvent arg0) {
+				System.out.println("Deiconified");
+			}
+
+			public void shellIconified(ShellEvent arg0) {
+				System.out.println("Iconified");
+				shell.setVisible(false);
+			}
+		});
 		shell.open();
 		shell.layout();
+		mainTabFolder.setSelection(2);
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch()) {
 				display.sleep();
 			}
 		}
 		display.dispose();
+	}
+
+	private void startTrayIcon() {
+
+		if (SystemTray.isSupported()) {
+
+			SystemTray tray = SystemTray.getSystemTray();
+			Image image = Toolkit.getDefaultToolkit().getImage("tray.gif");
+
+			MouseListener mouseListener = new MouseListener() {
+
+				public void mouseClicked(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse clicked!");
+					if (! SwingUtilities.isRightMouseButton(e) ) {
+						if (display.isDisposed())
+							return;
+						display.asyncExec(new Runnable() {
+							public void run() {
+								shell.setVisible(true);
+								shell.setActive();
+								shell.setFocus();
+								shell.setMinimized(false);
+							}
+						});
+					}
+				}
+
+				public void mouseEntered(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse entered!");                 
+				}
+
+				public void mouseExited(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse exited!");                 
+				}
+
+				public void mousePressed(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse pressed!");                 
+				}
+
+				public void mouseReleased(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse released!");                 
+				}
+			};
+
+			ActionListener exitListener = new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("Exiting...");
+					if (display.isDisposed())
+						return;
+					display.asyncExec(new Runnable() {
+						public void run() {
+							display.dispose();
+							shell.dispose();
+						}
+					});
+					System.exit(0);
+				}
+			};
+			ActionListener openListener = new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("OPEN...");
+					if (display.isDisposed())
+						return;
+					display.asyncExec(new Runnable() {
+						public void run() {
+							if (!shell.isVisible()) {
+								shell.setVisible(true);
+								shell.setActive();
+								shell.setFocus();
+								shell.setMinimized(false);
+							}
+						}
+					});
+
+				}
+			};
+
+			PopupMenu popup = new PopupMenu();
+
+			java.awt.MenuItem openMenutItem = new java.awt.MenuItem("Open");
+			java.awt.MenuItem exitMenutItem = new java.awt.MenuItem("Exit");
+			exitMenutItem.addActionListener(exitListener);
+			openMenutItem.addActionListener(openListener);
+			popup.add(openMenutItem);
+			popup.add(exitMenutItem);
+
+			trayIcon = new TrayIcon(image, "VCL One Button", popup);
+
+			ActionListener actionListener = new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					trayIcon.displayMessage("Action Event", 
+							"An Action Event Has Been Performed!",
+							TrayIcon.MessageType.INFO);
+				}
+			};
+
+			trayIcon.setImageAutoSize(true);
+			trayIcon.addActionListener(actionListener);
+			trayIcon.addMouseListener(mouseListener);
+
+			try {
+				tray.add(trayIcon);
+			} catch (AWTException e) {
+				System.err.println("TrayIcon could not be added.");
+			}
+
+		} else {
+			//  System Tray is not supported
+			System.err.println("System Tray is not supported");
+		}
+
 	}
 
 	/**
