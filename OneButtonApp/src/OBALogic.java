@@ -232,21 +232,33 @@ public class OBALogic {
 				int imageid = Integer.parseInt((String) ((HashMap) res[i])
 						.get("imageid"));
 				String imagename = (String) ((HashMap) res[i]).get("imagename");
-
+				int status = OBABean.UNKNOWN_STATUS;
+				int login_mode = -1;
 				String[] req_status = getRequestStatus(requestid);
 				String[] conn_data = new String[3];
 				boolean isReserved = req_status[0].equals("ready");
 				if (isReserved) {
 					conn_data = getConnectData(requestid);
+					if (conn_data[2] == this.password) {
+						login_mode = OBABean.SSH_LOGIN;
+					} else {
+						login_mode = OBABean.RDP_LOGIN;
+					}
 				} else {
 					conn_data[0] = null;
 					conn_data[1] = null;
 					conn_data[2] = null;
 				}
-
+				
+				if (req_status[0].equals("ready")) status = OBABean.READY;
+				if (req_status[0].equals("loading")) status = OBABean.LOADING;
+				if (req_status[0].equals("timedout")) status = OBABean.TIMEDOUT;
+				if (req_status[0].equals("future")) status = OBABean.FUTURE;
+				if (req_status[0].equals("failed")) status = OBABean.FAILED;
+				
 				OBABean newBean = new OBABean(imageid, imagename, conn_data[1],
 						conn_data[2], requestid, conn_data[0],
-						Platform.Windows, start, end, duration, -1, isReserved,
+						Platform.Windows, start, end, duration, login_mode, status, isReserved,
 						null);
 				reservationList.put(requestid, newBean);
 			}
@@ -406,6 +418,26 @@ public class OBALogic {
 
 	public String getPassword() {
 		return password;
+	}
+
+	public int updateStatus(OBABean aBean) {
+		String[] req_status = getRequestStatus(aBean.getRequestId());
+		if (req_status[0].equals("ready")) {
+			aBean.setStatus(OBABean.READY);
+		} else if (req_status[0].equals("loading")) {
+			aBean.setStatus(OBABean.LOADING);
+		} else if (req_status[0].equals("future")) {
+			aBean.setStatus(OBABean.FUTURE);
+		} else if (req_status[0].equals("timedout")) {
+			aBean.setStatus(OBABean.TIMEDOUT);
+		} else if (req_status[0].equals("failed")) {
+			aBean.setStatus(OBABean.FAILED);
+		} else {
+			System.err.println("Fail to update the status of OBABean.");
+			return -1;
+		}
+		return aBean.getStatus();
+		
 	}
 
 }

@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -69,6 +71,7 @@ public class MainOBAGUI {
 	public void open() {
 		display = Display.getDefault();
 		createContents();
+		loadReservations(controller.getCurrentReservations());
 		// center the dialog screen to the monitor
 		Rectangle bounds = display.getBounds();
 		Rectangle rect = shell.getBounds();
@@ -502,7 +505,22 @@ public class MainOBAGUI {
 					menu.setVisible(true);
 				}
 			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				if (e.button == 1) {
+					int selectedOBABeanRequestID = Integer.parseInt(statusTable.getSelection()[0].getText(8));
+					OBABean selectedBean = controller.getOBABean(selectedOBABeanRequestID);
+					// This step is used to check the status of the reservation
+					// It can be ignored if take too much time.
+					controller.VCLConnector.updateStatus(selectedBean);
+					if (selectedBean.getStatus() == OBABean.READY) {
+						selectedBean.start();
+					}
+				}
+			}
 		});
+
 		FormData fd_table_1 = new FormData();
 		fd_table_1.bottom = new FormAttachment(100, -10);
 		fd_table_1.right = new FormAttachment(100, -10);
@@ -610,21 +628,6 @@ public class MainOBAGUI {
 			one_item.setText(1, entry_list[i].getImageName());
 			one_item.setText(2, entry_list[i].getImageDesc());
 		}
-		//
-		// TableItem item = new TableItem(mainTable, SWT.NONE);
-		// item.setText(0, "2422");
-		// item.setText(1, "VCL2.2.1 SandBox");
-		// item.setText(2, "Our testing image1");
-		//
-		// TableItem item2 = new TableItem(mainTable, SWT.NONE);
-		// item2.setText(0, "2813");
-		// item2.setText(1, "centos_tunnel_main_campus");
-		// item2.setText(2, "Our testing image2");
-		//
-		// TableItem item3 = new TableItem(mainTable, SWT.NONE);
-		// item3.setText(0, "1913");
-		// item3.setText(1, "centos_tunnel_mcnc");
-		// item3.setText(2, "Our testing image3");
 	}
 
 	/**
@@ -698,7 +701,7 @@ public class MainOBAGUI {
 				duration = (int) (all_possible_durations[duration_combo
 				                                         .getSelectionIndex()] * 60);
 			}
-			
+
 			// Now switch to the Current active OBA tab
 			mainTabFolder.setSelection(2);
 
@@ -757,10 +760,10 @@ public class MainOBAGUI {
 								error_dialog.open();
 								break;
 							}
-							
+
 							if (status[0].equals("future")) {
-								// Delete the tableitem
-								future = true;
+								new_OBA_bean.setStatus(OBABean.FUTURE);
+								controller.addOBABean(new_OBA_bean);
 								break;
 							}
 
@@ -780,7 +783,8 @@ public class MainOBAGUI {
 												remain_time_str);
 									}
 								});
-									ready = true;
+								new_OBA_bean.setStatus(OBABean.READY);
+								controller.addOBABean(new_OBA_bean);
 								break;
 							} else if (complete_percent[0] >= 0) {
 								try {
@@ -814,7 +818,7 @@ public class MainOBAGUI {
 								error_dialog.open();
 							}
 						}
-						
+
 						// If this is a future reservation
 						if (future) {
 							if (display.isDisposed())
@@ -831,12 +835,17 @@ public class MainOBAGUI {
 							return;
 						}
 						// If this reservation is ready
-						if (ready) {
+						if (new_OBA_bean.getStatus() == OBABean.READY) {
 							final String[] conn_data = controller.VCLConnector
 									.getConnectData(new_OBA_bean.getRequestId());
 							new_OBA_bean.setIpAddress(conn_data[0]);
 							new_OBA_bean.setUsername(conn_data[1]);
 							new_OBA_bean.setPassword(conn_data[2]);
+							if (conn_data[2].equals(controller.VCLConnector.getPassword())) {
+								new_OBA_bean.setLogin_mode(OBABean.SSH_LOGIN);
+							} else {
+								new_OBA_bean.setLogin_mode(OBABean.RDP_LOGIN);
+							}
 
 							// Now update the statusTable item to show all
 							// available info
@@ -892,13 +901,99 @@ public class MainOBAGUI {
 	}
 
 	/**
+	 * This function load an OBABean in to the 3rd tab of the MainOBAGUI
+	 * 
+	 * @param aBean
+	 */
+	private void loadOBABean(OBABean aBean) {
+
+		final TableItem one_status_Item = new TableItem(statusTable,
+				SWT.NONE);
+		one_status_Item.setText(0, Integer.toString(aBean.getImageId()));
+		one_status_Item.setText(1, aBean.getImageName());
+
+		final int item_index = statusTable.indexOf(one_status_Item);
+
+		// Add disposelistener to the one_status_item, so that when the
+		// table item is deleted,
+		// its editor should be deleted too.
+		one_status_Item.addDisposeListener(new DisposeListener() {
+
+			@Override
+			public void widgetDisposed(DisposeEvent arg0) {
+				// TODO Auto-generated method stub
+				//				bar.dispose();
+				//				editor.dispose();
+			}
+		});
+		if (aBean.getIpAddress() != null) {
+			one_status_Item.setText(
+					status_Titles.get("IP address"),
+					aBean.getIpAddress());
+		}
+		if (aBean.getUsername() != null) {
+			one_status_Item.setText(
+					status_Titles.get("Username"),
+					aBean.getUsername());
+		}
+		if (aBean.getPassword() != null) {
+			if (aBean.getPassword()
+					.equals(controller.VCLConnector
+							.getPassword())) {
+				one_status_Item.setText(
+						status_Titles.get("Password"),
+						"(use your campus password)");
+			} else {
+				one_status_Item.setText(
+						status_Titles.get("Password"),
+						aBean.getPassword());
+			}
+		}
+		switch (aBean.getStatus()) {
+		case OBABean.READY:
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"READY");
+			break;
+		case OBABean.LOADING:
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"LOADING");
+			break;
+		case OBABean.TIMEDOUT:
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"TIMEDOUT");
+			break;
+		case OBABean.FAILED:
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"FAILED");
+			break;
+		default :
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"UNKNOWN STATUS");
+			break;
+		}
+		one_status_Item.setText(status_Titles
+				.get("Request ID"), Integer
+				.toString(aBean
+						.getRequestId()));
+	}
+	/**
 	 * TODO : fill the code This method take an ArrayList of OBABean and load it
 	 * into a table
 	 * 
 	 * @param reservationList
 	 */
-	private void loadReservations(Table mainTable,
+	void loadReservations(
 			HashMap<Integer, OBABean> reservationList) {
 
+		Collection<OBABean> c = reservationList.values();
+		Iterator<OBABean> itr = c.iterator();
+		while(itr.hasNext()) {
+			loadOBABean(itr.next());
+		}
 	}
 }

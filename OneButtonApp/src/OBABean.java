@@ -27,11 +27,27 @@ public class OBABean {
 	private boolean isReserved;
 	private int initialLoadingTime;
 	private int login_mode;
+	private int status;
+
+	public int getStatus() {
+		return status;
+	}
+
+	public void setStatus(int status) {
+		this.status = status;
+	}
 
 	private OBAEntry ownerEntry;
 
 	public static final int SSH_LOGIN = 0;
 	public static final int RDP_LOGIN = 1;
+	
+	public static final int UNKNOWN_STATUS = 0;
+	public static final int READY = 1;
+	public static final int LOADING = 2;
+	public static final int TIMEDOUT = 3;
+	public static final int FAILED = 4;
+	public static final int FUTURE = 5;
 
 	/**
 	 * Default Constructor
@@ -56,7 +72,7 @@ public class OBABean {
 	public OBABean(int imageId, String imageName, final String username,
 			final String password, int requestId, String ipAddress,
 			Platform clientPlatform, Calendar startTime, Calendar endTime,
-			long duration, int login_mode, boolean isReserved,
+			long duration, int login_mode, int status, boolean isReserved,
 			OBAEntry ownerEntry) {
 
 		setImageId(imageId);
@@ -69,6 +85,7 @@ public class OBABean {
 		setStartTime(startTime);
 		setEndTime(endTime);
 		setDuration(duration);
+		setStatus(status);
 		this.isReserved = isReserved;
 		this.initialLoadingTime = -1;
 		this.login_mode = login_mode;
@@ -184,7 +201,7 @@ public class OBABean {
 	 * Start the connection to the remote host/image
 	 */
 	public void start() {
-		try {
+		/*try {
 			// Wait for a short time after establishing a reservation and
 			// connecting to the host
 			// since the VCL needs time to process remote IP in its firewall.
@@ -192,7 +209,7 @@ public class OBABean {
 								// RDP and SSH.
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-		}
+		}*/
 		directStart();
 	}
 

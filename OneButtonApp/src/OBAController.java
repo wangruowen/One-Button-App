@@ -60,16 +60,6 @@ public class OBAController {
 	}
 
 	public void showMainOBA() {
-		// controller.loadCurrentReservations();
-		// HashMap<Integer, String> list_image =
-		// VCLConnector.getAvailableImages();
-		// System.out.println(list_image);
-		// Calendar now = Calendar.getInstance();
-		// int requestID = VCLConnector.sendRequestReservation(1008, now , 60);
-		// VCLConnector.getConnectData(1776879);
-		// VCLConnector.getCurrentReservations();
-		// VCLConnector.getConnectData(1776900);
-		// VCLConnector.getConnectData(1776943);
 		if (mainOBA == null) {
 			this.currentConfigedOBAEntryList = DBManager
 					.getStoredOBAEntries(username);
@@ -102,10 +92,6 @@ public class OBAController {
 		return oba_inst.loginCheck();
 	}
 
-	public void loadCurrentReservationsVCL() {
-
-	}
-
 	/**
 	 * Use the VCLConnector to get the current reservations from the VCL server
 	 * and write it down in the reservationsList variable Check the
@@ -114,11 +100,11 @@ public class OBAController {
 	 * @return reservationsList
 	 */
 	public HashMap<Integer, OBABean> getCurrentReservations() {
-		if (reservationsList == null) {
-			reservationsList = VCLConnector.getCurrentReservations();
-			return reservationsList;
+		if (this.reservationsList.size() == 0) {
+			this.reservationsList = VCLConnector.getCurrentReservations();
+			return this.reservationsList;
 		} else {
-			return reservationsList;
+			return this.reservationsList;
 		}
 	}
 
@@ -154,7 +140,7 @@ public class OBAController {
 			// At this time, IP address is not available.
 			result_Bean = new OBABean(image_id, image_name, username, password,
 					request_id, null, Platform.Windows, start_Time, null,
-					duration, login_mode, false, ownerEntry);
+					duration, OBABean.UNKNOWN_STATUS, login_mode, false, ownerEntry);
 			reservationsList.put(request_id, result_Bean);
 		}
 
@@ -226,5 +212,13 @@ public class OBAController {
 
 	public int getImageIDByImageName(String image_name) {
 		return this.reverseOBAentryHashMap.get(image_name);
+	}
+
+	public OBABean getOBABean(int selectedOBABeanRequestID) {
+		return this.reservationsList.get(selectedOBABeanRequestID);
+	}
+	
+	public void addOBABean(OBABean aBean) {
+		this.reservationsList.put(aBean.getRequestId(), aBean);
 	}
 }
