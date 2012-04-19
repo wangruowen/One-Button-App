@@ -389,6 +389,8 @@ public class OBALogic {
 
 			complete_percent = (int) (((float) initial_loading_time - (float) remain_time)
 					/ (float) initial_loading_time * 100.0);
+		} else if (req_status[0].equals("future")) {
+			return req_status;
 		} else {
 			System.err.println("Fail to make a reservation.");
 			return req_status;

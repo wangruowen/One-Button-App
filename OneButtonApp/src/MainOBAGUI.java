@@ -44,6 +44,11 @@ public class MainOBAGUI {
 	private TabItem tbtmStatus;
 
 	private Combo duration_combo;
+	private Combo combo_day;
+	private Combo combo_hour;
+	private Combo combo_minute;
+	private Combo combo_ampm;
+	private Button btnRadioNow;
 	private float[] all_possible_durations;
 	private HashMap<String, Integer> status_Titles;
 
@@ -113,37 +118,7 @@ public class MainOBAGUI {
 		compo1.setLayout(new FormLayout());
 
 		table = new Table(compo1, SWT.BORDER | SWT.FULL_SELECTION);
-		table.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseDown(MouseEvent e) {
 
-			}
-
-			@Override
-			public void mouseUp(MouseEvent e) {
-				if (e.button == 3) {
-					Menu menu = new Menu(table.getShell(), SWT.POP_UP);
-					MenuItem editItem = new MenuItem(menu, SWT.PUSH);
-					editItem.setText("Edit");
-					MenuItem delItem = new MenuItem(menu, SWT.PUSH);
-					delItem.setText("Delete");
-
-					// draws pop up menu:
-					Point pt = new Point(e.x, e.y);
-					pt = table.toDisplay(pt);
-					menu.setLocation(pt.x, pt.y);
-					menu.setVisible(true);
-				}
-			}
-
-			@Override
-			public void mouseDoubleClick(MouseEvent e) {
-				if (e.button == 1) {
-					// When double click one OBA item, start launching it
-					start_one_OBA_instance(table.getSelection());
-				}
-			}
-		});
 		FormData fd_table = new FormData();
 		fd_table.top = new FormAttachment(0, 10);
 		fd_table.left = new FormAttachment(0, 10);
@@ -166,28 +141,6 @@ public class MainOBAGUI {
 		}
 
 		Button btnOba = new Button(compo1, SWT.NONE);
-
-		// Launch button is clicked
-		btnOba.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				start_one_OBA_instance(table.getSelection());
-			}
-
-			/**
-			 * this method looks into the reservationList of the controller and
-			 * find the OBABean corresponding to each input TableItem
-			 * 
-			 * @param selectedItems
-			 *            the list of input TableItem
-			 * @return
-			 */
-			private OBABean[] getOBAof(TableItem[] selectedItems) {
-				// TODO Auto-generated method stub
-
-				return null;
-			}
-		});
 
 		FormData fd_btnOba = new FormData();
 		fd_btnOba.left = new FormAttachment(100, -152);
@@ -245,7 +198,7 @@ public class MainOBAGUI {
 		fd_lblStartTime.bottom = new FormAttachment(lblDuration, -10);
 		lblStartTime.setLayoutData(fd_lblStartTime);
 
-		Button btnRadioNow = new Button(compo1, SWT.RADIO);
+		btnRadioNow = new Button(compo1, SWT.RADIO);
 		btnRadioNow.setSelection(true);
 		FormData fd_btnRadioNow = new FormData();
 		fd_btnRadioNow.bottom = new FormAttachment(lblDuration, -10);
@@ -253,14 +206,14 @@ public class MainOBAGUI {
 		btnRadioNow.setLayoutData(fd_btnRadioNow);
 		btnRadioNow.setText("Now");
 
-		Button btnRadioLater = new Button(compo1, SWT.RADIO);
+		final Button btnRadioLater = new Button(compo1, SWT.RADIO);
 		btnRadioLater.setText("Later");
 		FormData fd_btnLater_1 = new FormData();
 		fd_btnLater_1.bottom = new FormAttachment(lblDuration, -10);
 		fd_btnLater_1.left = new FormAttachment(btnRadioNow, 6);
 		btnRadioLater.setLayoutData(fd_btnLater_1);
 
-		Combo combo_day = new Combo(compo1, SWT.NONE);
+		combo_day = new Combo(compo1, SWT.NONE);
 		combo_day.setItems(new String[] { "Sunday", "Monday", "Tuesday",
 				"Wednesday", "Thursday", "Friday", "Saturday" });
 		FormData fd_combo_day = new FormData();
@@ -275,7 +228,7 @@ public class MainOBAGUI {
 		lblAt.setLayoutData(fd_lblAt);
 		lblAt.setText("at");
 
-		Combo combo_hour = new Combo(compo1, SWT.NONE);
+		combo_hour = new Combo(compo1, SWT.NONE);
 		combo_hour.setItems(new String[] { "1", "2", "3", "4", "5", "6", "7",
 				"8", "9", "10", "11", "12" });
 		FormData fd_combo_hour = new FormData();
@@ -284,7 +237,7 @@ public class MainOBAGUI {
 		fd_combo_hour.left = new FormAttachment(lblAt, 6);
 		combo_hour.setLayoutData(fd_combo_hour);
 
-		Combo combo_minute = new Combo(compo1, SWT.NONE);
+		combo_minute = new Combo(compo1, SWT.NONE);
 		combo_minute.setItems(new String[] { "00", "15", "30", "45" });
 		FormData fd_combo_minute = new FormData();
 		fd_combo_minute.right = new FormAttachment(combo_hour, 105);
@@ -292,13 +245,82 @@ public class MainOBAGUI {
 		fd_combo_minute.bottom = new FormAttachment(lblDuration, -6);
 		combo_minute.setLayoutData(fd_combo_minute);
 
-		Combo combo_ampm = new Combo(compo1, SWT.NONE);
+		combo_ampm = new Combo(compo1, SWT.NONE);
 		combo_ampm.setItems(new String[] { "a.m.", "p.m." });
 		FormData fd_combo_ampm = new FormData();
 		fd_combo_ampm.right = new FormAttachment(combo_minute, 115);
 		fd_combo_ampm.left = new FormAttachment(combo_minute, 6);
 		fd_combo_ampm.bottom = new FormAttachment(lblDuration, -6);
 		combo_ampm.setLayoutData(fd_combo_ampm);
+
+		// Launch button is clicked
+		btnOba.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (((btnRadioNow.getSelection()) && (duration_combo.getSelectionIndex() >= 0))
+						|| ((duration_combo.getSelectionIndex() >= 0) && (btnRadioLater.getSelection()) && (combo_day.getSelectionIndex() >= 0) && (combo_hour.getSelectionIndex() >= 0)) && (combo_minute.getSelectionIndex() >= 0) && (combo_ampm.getSelectionIndex() >= 0)) {
+					start_one_OBA_instance(table.getSelection());
+				} else {
+					MessageBox dialog = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
+					dialog.setText("No reservation time");
+					dialog.setMessage("Please set the reservation time");
+					dialog.open();
+				}
+			}
+
+			/**
+			 * this method looks into the reservationList of the controller and
+			 * find the OBABean corresponding to each input TableItem
+			 * 
+			 * @param selectedItems
+			 *            the list of input TableItem
+			 * @return
+			 */
+			private OBABean[] getOBAof(TableItem[] selectedItems) {
+				// TODO Auto-generated method stub
+
+				return null;
+			}
+		});
+		table.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseDown(MouseEvent e) {
+
+			}
+
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (e.button == 3) {
+					Menu menu = new Menu(table.getShell(), SWT.POP_UP);
+					MenuItem editItem = new MenuItem(menu, SWT.PUSH);
+					editItem.setText("Edit");
+					MenuItem delItem = new MenuItem(menu, SWT.PUSH);
+					delItem.setText("Delete");
+
+					// draws pop up menu:
+					Point pt = new Point(e.x, e.y);
+					pt = table.toDisplay(pt);
+					menu.setLocation(pt.x, pt.y);
+					menu.setVisible(true);
+				}
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				if (e.button == 1) {
+					// When double click one OBA item, check the reservation time and start launching it
+					if (((btnRadioNow.getSelection()) && (duration_combo.getSelectionIndex() >= 0))
+							|| ((duration_combo.getSelectionIndex() >= 0) && (btnRadioLater.getSelection()) && (combo_day.getSelectionIndex() >= 0) && (combo_hour.getSelectionIndex() >= 0)) && (combo_minute.getSelectionIndex() >= 0) && (combo_ampm.getSelectionIndex() >= 0)) {
+						start_one_OBA_instance(table.getSelection());
+					} else {
+						MessageBox dialog = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
+						dialog.setText("No reservation time");
+						dialog.setMessage("Please set the reservation time");
+						dialog.open();
+					}
+				}
+			}
+		});
 
 		/**
 		 * tab2.
@@ -620,16 +642,63 @@ public class MainOBAGUI {
 			dialog.setMessage("Please select one OBA instance to start");
 			dialog.open();
 		} else {
-			// Get all information needed for making a reservation
-			int oba_id = Integer.parseInt(selectedItems[0].getText(0));
-			final OBAEntry selectedOBAEntry = controller
-					.getOBAEntryByTableID(oba_id - 1);
+			final int image_id;
+			final String name;
+			final Calendar startTime;
+			final int duration;
+			final OBAEntry selectedOBAEntry;
+			if (btnRadioNow.getSelection()) {
+				// The reservation time is NOW, Get all the information needed for making a reservation
+				int oba_id = Integer.parseInt(selectedItems[0].getText(0));
+				selectedOBAEntry = controller
+						.getOBAEntryByTableID(oba_id - 1);
 
-			final int image_id = selectedOBAEntry.getImageID();
-			final String name = selectedOBAEntry.getImageName();
-			final Calendar startTime = Calendar.getInstance();
-			final int duration = (int) (all_possible_durations[duration_combo
-					.getSelectionIndex()] * 60);
+				image_id = selectedOBAEntry.getImageID();
+				name = selectedOBAEntry.getImageName();
+				startTime = Calendar.getInstance();
+				duration = (int) (all_possible_durations[duration_combo
+				                                         .getSelectionIndex()] * 60);
+			} else {
+				// The reservation time is LATER, Get all the information needed for making a reservation
+				int oba_id = Integer.parseInt(selectedItems[0].getText(0));
+				selectedOBAEntry = controller
+						.getOBAEntryByTableID(oba_id - 1);
+
+				image_id = selectedOBAEntry.getImageID();
+				name = selectedOBAEntry.getImageName();
+				Calendar now = Calendar.getInstance();
+				now.setFirstDayOfWeek(Calendar.SUNDAY);
+				int hour_day = 0;
+				int minute = combo_minute.getSelectionIndex() * 15;
+				int nowWeekDay = now.get(Calendar.DAY_OF_WEEK);
+				int selectedDay = combo_day.getSelectionIndex();
+				int selectedWeekDay = Calendar.SUNDAY + selectedDay;
+
+				if (combo_ampm.getSelectionIndex() == 0) {
+					// If it's AM
+					hour_day = combo_hour.getSelectionIndex() + 1;
+					if (hour_day == 12) {
+						hour_day = 0;
+					}
+				} else if (combo_ampm.getSelectionIndex() == 1) {
+					// If it's PM
+					hour_day = combo_hour.getSelectionIndex() + 13;
+					if (hour_day == 24) {
+						hour_day = 12;
+					}
+				}
+				startTime = Calendar.getInstance();
+				if (selectedWeekDay >= nowWeekDay) {
+					startTime.add(Calendar.DATE, selectedWeekDay - nowWeekDay);
+				} else {
+					startTime.add(Calendar.DATE, selectedWeekDay + 7 - nowWeekDay);
+				}
+				startTime.set(startTime.get(Calendar.YEAR), startTime.get(Calendar.MONTH), startTime.get(Calendar.DATE), hour_day, minute);
+
+				duration = (int) (all_possible_durations[duration_combo
+				                                         .getSelectionIndex()] * 60);
+			}
+			
 			// Now switch to the Current active OBA tab
 			mainTabFolder.setSelection(2);
 
@@ -677,7 +746,7 @@ public class MainOBAGUI {
 						final int[] complete_percent = new int[1];
 						complete_percent[0] = 0;
 						boolean ready = false;
-
+						boolean future = false;
 						while (true) {
 							String[] status = controller.VCLConnector
 									.getPercentageStatus(new_OBA_bean);
@@ -686,6 +755,12 @@ public class MainOBAGUI {
 								// Delete the tableitem
 								statusTable.remove(item_index);
 								error_dialog.open();
+								break;
+							}
+							
+							if (status[0].equals("future")) {
+								// Delete the tableitem
+								future = true;
 								break;
 							}
 
@@ -705,7 +780,7 @@ public class MainOBAGUI {
 												remain_time_str);
 									}
 								});
-								ready = true;
+									ready = true;
 								break;
 							} else if (complete_percent[0] >= 0) {
 								try {
@@ -739,7 +814,23 @@ public class MainOBAGUI {
 								error_dialog.open();
 							}
 						}
-
+						
+						// If this is a future reservation
+						if (future) {
+							if (display.isDisposed())
+								return;
+							display.asyncExec(new Runnable() {
+								public void run() {
+									if (bar.isDisposed())
+										return;
+									bar.setSelection(complete_percent[0]);
+									one_status_Item.setText(status_Titles.get("Remaining Time"),
+											"Future Reservation");
+								}
+							});
+							return;
+						}
+						// If this reservation is ready
 						if (ready) {
 							final String[] conn_data = controller.VCLConnector
 									.getConnectData(new_OBA_bean.getRequestId());
