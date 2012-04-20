@@ -60,16 +60,6 @@ public class OBAController {
 	}
 
 	public void showMainOBA() {
-		// controller.loadCurrentReservations();
-		// HashMap<Integer, String> list_image =
-		// VCLConnector.getAvailableImages();
-		// System.out.println(list_image);
-		// Calendar now = Calendar.getInstance();
-		// int requestID = VCLConnector.sendRequestReservation(1008, now , 60);
-		// VCLConnector.getConnectData(1776879);
-		// VCLConnector.getCurrentReservations();
-		// VCLConnector.getConnectData(1776900);
-		// VCLConnector.getConnectData(1776943);
 		if (mainOBA == null) {
 			this.currentConfigedOBAEntryList = DBManager
 					.getStoredOBAEntries(username);
@@ -114,8 +104,25 @@ public class OBAController {
 	 * @return reservationsList
 	 */
 	public HashMap<Integer, OBABean> getCurrentReservations() {
-		if (reservationsList == null) {
+		if (this.reservationsList.size() == 0) {
 			reservationsList = VCLConnector.getCurrentReservations();
+
+			// TODO we need to associate currentConfigedOBAEntryList with the
+			// current active reservation
+			if (currentConfigedOBAEntryList != null) {
+				for (OBABean each_active_bean : reservationsList.values()) {
+					// go through the OBAEntry List to find the OBAEntry that
+					// can match the OBABean
+					for (OBAEntry each_entry : currentConfigedOBAEntryList) {
+						if (each_active_bean.getImageId() == each_entry
+								.getImageID()) {
+							each_active_bean.setOwnerEntry(each_entry);
+							break;
+						}
+					}
+				}
+			}
+
 			return reservationsList;
 		} else {
 			return reservationsList;
@@ -143,7 +150,6 @@ public class OBAController {
 
 		int image_id = ownerEntry.getImageID();
 		String image_name = ownerEntry.getImageName();
-		int login_mode = ownerEntry.getLoginMode();
 
 		int request_id = VCLConnector
 				.addRequest(image_id, start_Time, duration);
@@ -154,7 +160,7 @@ public class OBAController {
 			// At this time, IP address is not available.
 			result_Bean = new OBABean(image_id, image_name, username, password,
 					request_id, null, Platform.Windows, start_Time, null,
-					duration, login_mode, false, ownerEntry);
+					duration, OBABean.UNKNOWN_STATUS, false, ownerEntry);
 			reservationsList.put(request_id, result_Bean);
 		}
 
@@ -226,5 +232,13 @@ public class OBAController {
 
 	public int getImageIDByImageName(String image_name) {
 		return this.reverseOBAentryHashMap.get(image_name);
+	}
+	
+	public OBABean getOBABean(int selectedOBABeanRequestID) {
+		return this.reservationsList.get(selectedOBABeanRequestID);
+	}
+	
+	public void addOBABean(OBABean aBean) {
+		this.reservationsList.put(aBean.getRequestId(), aBean);
 	}
 }

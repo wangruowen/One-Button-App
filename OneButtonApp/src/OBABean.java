@@ -26,12 +26,28 @@ public class OBABean {
 	private Platform clientPlatform;
 	private boolean isReserved;
 	private int initialLoadingTime;
-	private int login_mode;
+	private int tmp_login_mode;
+	private int status;
+
+	public int getStatus() {
+		return status;
+	}
+
+	public void setStatus(int status) {
+		this.status = status;
+	}
 
 	private OBAEntry ownerEntry;
 
 	public static final int SSH_LOGIN = 0;
 	public static final int RDP_LOGIN = 1;
+	
+	public static final int UNKNOWN_STATUS = 0;
+	public static final int READY = 1;
+	public static final int LOADING = 2;
+	public static final int TIMEDOUT = 3;
+	public static final int FAILED = 4;
+	public static final int FUTURE = 5;
 
 	/**
 	 * Default Constructor
@@ -56,8 +72,7 @@ public class OBABean {
 	public OBABean(int imageId, String imageName, final String username,
 			final String password, int requestId, String ipAddress,
 			Platform clientPlatform, Calendar startTime, Calendar endTime,
-			long duration, int login_mode, boolean isReserved,
-			OBAEntry ownerEntry) {
+			long duration, int status, boolean isReserved, OBAEntry ownerEntry) {
 
 		setImageId(imageId);
 		setImageName(imageName);
@@ -69,10 +84,15 @@ public class OBABean {
 		setStartTime(startTime);
 		setEndTime(endTime);
 		setDuration(duration);
+		setStatus(status);
 		this.isReserved = isReserved;
 		this.initialLoadingTime = -1;
-		this.login_mode = login_mode;
 		this.ownerEntry = ownerEntry;
+		if (ownerEntry != null) {
+			this.tmp_login_mode = ownerEntry.getLoginMode();
+		} else {
+			this.tmp_login_mode = -1;
+		}
 	}
 
 	/**
@@ -199,18 +219,18 @@ public class OBABean {
 	public void directStart() {
 		String[] conn_data = { getIpAddress(), getUsername(), getPassword() };
 
-		if (this.login_mode == SSH_LOGIN) {
+		if (this.tmp_login_mode == SSH_LOGIN) {
 			termLaunch(conn_data);
-		} else if (this.login_mode == RDP_LOGIN) {
+		} else if (this.tmp_login_mode == RDP_LOGIN) {
 			rdpLaunch(conn_data);
 		} else {
 			// Determine if you need to connect to the host via RDP or SSH
 			if (RDP.isHostRDPReady(getIpAddress())) {
-				this.login_mode = RDP_LOGIN;
+				this.tmp_login_mode = RDP_LOGIN;
 				this.ownerEntry.setLoginMode(RDP_LOGIN);
 				rdpLaunch(conn_data); // use RDP to login to the terminal
 			} else {
-				this.login_mode = SSH_LOGIN;
+				this.tmp_login_mode = SSH_LOGIN;
 				this.ownerEntry.setLoginMode(SSH_LOGIN);
 				termLaunch(conn_data); // use ssh to login to the terminal
 			}
@@ -394,10 +414,19 @@ public class OBABean {
 	}
 
 	public int getLogin_mode() {
-		return login_mode;
+		return tmp_login_mode;
 	}
 
 	public void setLogin_mode(int login_mode) {
-		this.login_mode = login_mode;
+		this.tmp_login_mode = login_mode;
+	}
+
+	public OBAEntry getOwnerEntry() {
+		return ownerEntry;
+	}
+
+	public void setOwnerEntry(OBAEntry ownerEntry) {
+		this.ownerEntry = ownerEntry;
+		this.tmp_login_mode = ownerEntry.getLoginMode();
 	}
 }

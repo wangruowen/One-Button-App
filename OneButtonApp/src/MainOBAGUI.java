@@ -1,8 +1,22 @@
+import java.awt.AWTException;
+import java.awt.Image;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import javax.print.attribute.standard.SheetCollate;
+import javax.swing.SwingUtilities;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.TableEditor;
@@ -12,6 +26,8 @@ import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.ShellEvent;
+import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FormAttachment;
@@ -38,12 +54,16 @@ public class MainOBAGUI {
 	private Display display;
 	private Shell shell;
 	private Table table;
-
 	private Table statusTable;
 	private TabFolder mainTabFolder;
 	private TabItem tbtmStatus;
 
 	private Combo duration_combo;
+	private Combo combo_day;
+	private Combo combo_hour;
+	private Combo combo_minute;
+	private Combo combo_ampm;
+	private Button btnRadioNow;
 	private float[] all_possible_durations;
 	private HashMap<String, Integer> status_Titles;
 
@@ -52,8 +72,11 @@ public class MainOBAGUI {
 	private Text text_dropbox_url;
 	private Text desc_text;
 
+	private TrayIcon trayIcon;
+
 	public MainOBAGUI() {
 		this.controller = OBAController.getInstance();
+		startTrayIcon();
 	}
 
 	/**
@@ -64,20 +87,157 @@ public class MainOBAGUI {
 	public void open() {
 		display = Display.getDefault();
 		createContents();
+		loadReservations(controller.getCurrentReservations());
 		// center the dialog screen to the monitor
 		Rectangle bounds = display.getBounds();
 		Rectangle rect = shell.getBounds();
 		int x = bounds.x + (bounds.width - rect.width) / 2;
 		int y = bounds.y + (bounds.height - rect.height) / 2;
 		shell.setLocation(x, y);
+		shell.addShellListener(new ShellListener() {
+
+			public void shellActivated(ShellEvent event) {
+				System.out.println("activate");
+			}
+
+			public void shellClosed(ShellEvent arg0) {
+				System.out.println("close");
+				System.exit(0);
+			}
+
+			public void shellDeactivated(ShellEvent arg0) {
+				System.out.println("Deactivated");
+			}
+
+			public void shellDeiconified(ShellEvent arg0) {
+				System.out.println("Deiconified");
+			}
+
+			public void shellIconified(ShellEvent arg0) {
+				System.out.println("Iconified");
+				shell.setVisible(false);
+			}
+		});
 		shell.open();
 		shell.layout();
+		mainTabFolder.setSelection(2);
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch()) {
 				display.sleep();
 			}
 		}
 		display.dispose();
+	}
+
+	private void startTrayIcon() {
+
+		if (SystemTray.isSupported()) {
+
+			SystemTray tray = SystemTray.getSystemTray();
+			Image image = Toolkit.getDefaultToolkit().getImage("tray.gif");
+
+			MouseListener mouseListener = new MouseListener() {
+
+				public void mouseClicked(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse clicked!");
+					if (! SwingUtilities.isRightMouseButton(e) ) {
+						if (display.isDisposed())
+							return;
+						display.asyncExec(new Runnable() {
+							public void run() {
+								shell.setVisible(true);
+								shell.setActive();
+								shell.setFocus();
+								shell.setMinimized(false);
+							}
+						});
+					}
+				}
+
+				public void mouseEntered(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse entered!");                 
+				}
+
+				public void mouseExited(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse exited!");                 
+				}
+
+				public void mousePressed(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse pressed!");                 
+				}
+
+				public void mouseReleased(java.awt.event.MouseEvent e) {
+					System.out.println("Tray Icon - Mouse released!");                 
+				}
+			};
+
+			ActionListener exitListener = new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("Exiting...");
+					if (display.isDisposed())
+						return;
+					display.asyncExec(new Runnable() {
+						public void run() {
+							display.dispose();
+							shell.dispose();
+						}
+					});
+					System.exit(0);
+				}
+			};
+			ActionListener openListener = new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					System.out.println("OPEN...");
+					if (display.isDisposed())
+						return;
+					display.asyncExec(new Runnable() {
+						public void run() {
+							if (!shell.isVisible()) {
+								shell.setVisible(true);
+								shell.setActive();
+								shell.setFocus();
+								shell.setMinimized(false);
+							}
+						}
+					});
+
+				}
+			};
+
+			PopupMenu popup = new PopupMenu();
+
+			java.awt.MenuItem openMenutItem = new java.awt.MenuItem("Open");
+			java.awt.MenuItem exitMenutItem = new java.awt.MenuItem("Exit");
+			exitMenutItem.addActionListener(exitListener);
+			openMenutItem.addActionListener(openListener);
+			popup.add(openMenutItem);
+			popup.add(exitMenutItem);
+
+			trayIcon = new TrayIcon(image, "VCL One Button", popup);
+
+			ActionListener actionListener = new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					trayIcon.displayMessage("Action Event", 
+							"An Action Event Has Been Performed!",
+							TrayIcon.MessageType.INFO);
+				}
+			};
+
+			trayIcon.setImageAutoSize(true);
+			trayIcon.addActionListener(actionListener);
+			trayIcon.addMouseListener(mouseListener);
+
+			try {
+				tray.add(trayIcon);
+			} catch (AWTException e) {
+				System.err.println("TrayIcon could not be added.");
+			}
+
+		} else {
+			//  System Tray is not supported
+			System.err.println("System Tray is not supported");
+		}
+
 	}
 
 	/**
@@ -113,37 +273,7 @@ public class MainOBAGUI {
 		compo1.setLayout(new FormLayout());
 
 		table = new Table(compo1, SWT.BORDER | SWT.FULL_SELECTION);
-		table.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseDown(MouseEvent e) {
 
-			}
-
-			@Override
-			public void mouseUp(MouseEvent e) {
-				if (e.button == 3) {
-					Menu menu = new Menu(table.getShell(), SWT.POP_UP);
-					MenuItem editItem = new MenuItem(menu, SWT.PUSH);
-					editItem.setText("Edit");
-					MenuItem delItem = new MenuItem(menu, SWT.PUSH);
-					delItem.setText("Delete");
-
-					// draws pop up menu:
-					Point pt = new Point(e.x, e.y);
-					pt = table.toDisplay(pt);
-					menu.setLocation(pt.x, pt.y);
-					menu.setVisible(true);
-				}
-			}
-
-			@Override
-			public void mouseDoubleClick(MouseEvent e) {
-				if (e.button == 1) {
-					// When double click one OBA item, start launching it
-					start_one_OBA_instance(table.getSelection());
-				}
-			}
-		});
 		FormData fd_table = new FormData();
 		fd_table.top = new FormAttachment(0, 10);
 		fd_table.left = new FormAttachment(0, 10);
@@ -166,28 +296,6 @@ public class MainOBAGUI {
 		}
 
 		Button btnOba = new Button(compo1, SWT.NONE);
-
-		// Launch button is clicked
-		btnOba.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				start_one_OBA_instance(table.getSelection());
-			}
-
-			/**
-			 * this method looks into the reservationList of the controller and
-			 * find the OBABean corresponding to each input TableItem
-			 * 
-			 * @param selectedItems
-			 *            the list of input TableItem
-			 * @return
-			 */
-			private OBABean[] getOBAof(TableItem[] selectedItems) {
-				// TODO Auto-generated method stub
-
-				return null;
-			}
-		});
 
 		FormData fd_btnOba = new FormData();
 		fd_btnOba.left = new FormAttachment(100, -152);
@@ -245,7 +353,7 @@ public class MainOBAGUI {
 		fd_lblStartTime.bottom = new FormAttachment(lblDuration, -10);
 		lblStartTime.setLayoutData(fd_lblStartTime);
 
-		Button btnRadioNow = new Button(compo1, SWT.RADIO);
+		btnRadioNow = new Button(compo1, SWT.RADIO);
 		btnRadioNow.setSelection(true);
 		FormData fd_btnRadioNow = new FormData();
 		fd_btnRadioNow.bottom = new FormAttachment(lblDuration, -10);
@@ -253,14 +361,14 @@ public class MainOBAGUI {
 		btnRadioNow.setLayoutData(fd_btnRadioNow);
 		btnRadioNow.setText("Now");
 
-		Button btnRadioLater = new Button(compo1, SWT.RADIO);
+		final Button btnRadioLater = new Button(compo1, SWT.RADIO);
 		btnRadioLater.setText("Later");
 		FormData fd_btnLater_1 = new FormData();
 		fd_btnLater_1.bottom = new FormAttachment(lblDuration, -10);
 		fd_btnLater_1.left = new FormAttachment(btnRadioNow, 6);
 		btnRadioLater.setLayoutData(fd_btnLater_1);
 
-		Combo combo_day = new Combo(compo1, SWT.NONE);
+		combo_day = new Combo(compo1, SWT.NONE);
 		combo_day.setItems(new String[] { "Sunday", "Monday", "Tuesday",
 				"Wednesday", "Thursday", "Friday", "Saturday" });
 		FormData fd_combo_day = new FormData();
@@ -275,7 +383,7 @@ public class MainOBAGUI {
 		lblAt.setLayoutData(fd_lblAt);
 		lblAt.setText("at");
 
-		Combo combo_hour = new Combo(compo1, SWT.NONE);
+		combo_hour = new Combo(compo1, SWT.NONE);
 		combo_hour.setItems(new String[] { "1", "2", "3", "4", "5", "6", "7",
 				"8", "9", "10", "11", "12" });
 		FormData fd_combo_hour = new FormData();
@@ -284,7 +392,7 @@ public class MainOBAGUI {
 		fd_combo_hour.left = new FormAttachment(lblAt, 6);
 		combo_hour.setLayoutData(fd_combo_hour);
 
-		Combo combo_minute = new Combo(compo1, SWT.NONE);
+		combo_minute = new Combo(compo1, SWT.NONE);
 		combo_minute.setItems(new String[] { "00", "15", "30", "45" });
 		FormData fd_combo_minute = new FormData();
 		fd_combo_minute.right = new FormAttachment(combo_hour, 105);
@@ -292,13 +400,82 @@ public class MainOBAGUI {
 		fd_combo_minute.bottom = new FormAttachment(lblDuration, -6);
 		combo_minute.setLayoutData(fd_combo_minute);
 
-		Combo combo_ampm = new Combo(compo1, SWT.NONE);
+		combo_ampm = new Combo(compo1, SWT.NONE);
 		combo_ampm.setItems(new String[] { "a.m.", "p.m." });
 		FormData fd_combo_ampm = new FormData();
 		fd_combo_ampm.right = new FormAttachment(combo_minute, 115);
 		fd_combo_ampm.left = new FormAttachment(combo_minute, 6);
 		fd_combo_ampm.bottom = new FormAttachment(lblDuration, -6);
 		combo_ampm.setLayoutData(fd_combo_ampm);
+
+		// Launch button is clicked
+		btnOba.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (((btnRadioNow.getSelection()) && (duration_combo.getSelectionIndex() >= 0))
+						|| ((duration_combo.getSelectionIndex() >= 0) && (btnRadioLater.getSelection()) && (combo_day.getSelectionIndex() >= 0) && (combo_hour.getSelectionIndex() >= 0)) && (combo_minute.getSelectionIndex() >= 0) && (combo_ampm.getSelectionIndex() >= 0)) {
+					start_one_OBA_instance(table.getSelection());
+				} else {
+					MessageBox dialog = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
+					dialog.setText("No reservation time");
+					dialog.setMessage("Please set the reservation time");
+					dialog.open();
+				}
+			}
+
+			/**
+			 * this method looks into the reservationList of the controller and
+			 * find the OBABean corresponding to each input TableItem
+			 * 
+			 * @param selectedItems
+			 *            the list of input TableItem
+			 * @return
+			 */
+			private OBABean[] getOBAof(TableItem[] selectedItems) {
+				// TODO Auto-generated method stub
+
+				return null;
+			}
+		});
+		table.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseDown(MouseEvent e) {
+
+			}
+
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (e.button == 3) {
+					Menu menu = new Menu(table.getShell(), SWT.POP_UP);
+					MenuItem editItem = new MenuItem(menu, SWT.PUSH);
+					editItem.setText("Edit");
+					MenuItem delItem = new MenuItem(menu, SWT.PUSH);
+					delItem.setText("Delete");
+
+					// draws pop up menu:
+					Point pt = new Point(e.x, e.y);
+					pt = table.toDisplay(pt);
+					menu.setLocation(pt.x, pt.y);
+					menu.setVisible(true);
+				}
+			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				if (e.button == 1) {
+					// When double click one OBA item, check the reservation time and start launching it
+					if (((btnRadioNow.getSelection()) && (duration_combo.getSelectionIndex() >= 0))
+							|| ((duration_combo.getSelectionIndex() >= 0) && (btnRadioLater.getSelection()) && (combo_day.getSelectionIndex() >= 0) && (combo_hour.getSelectionIndex() >= 0)) && (combo_minute.getSelectionIndex() >= 0) && (combo_ampm.getSelectionIndex() >= 0)) {
+						start_one_OBA_instance(table.getSelection());
+					} else {
+						MessageBox dialog = new MessageBox(shell, SWT.ICON_ERROR | SWT.OK);
+						dialog.setText("No reservation time");
+						dialog.setMessage("Please set the reservation time");
+						dialog.open();
+					}
+				}
+			}
+		});
 
 		/**
 		 * tab2.
@@ -480,7 +657,22 @@ public class MainOBAGUI {
 					menu.setVisible(true);
 				}
 			}
+
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				if (e.button == 1) {
+					int selectedOBABeanRequestID = Integer.parseInt(statusTable.getSelection()[0].getText(8));
+					OBABean selectedBean = controller.getOBABean(selectedOBABeanRequestID);
+					// This step is used to check the status of the reservation
+					// It can be ignored if take too much time.
+					controller.VCLConnector.updateStatus(selectedBean);
+					if (selectedBean.getStatus() == OBABean.READY) {
+						selectedBean.start();
+					}
+				}
+			}
 		});
+
 		FormData fd_table_1 = new FormData();
 		fd_table_1.bottom = new FormAttachment(100, -10);
 		fd_table_1.right = new FormAttachment(100, -10);
@@ -588,21 +780,6 @@ public class MainOBAGUI {
 			one_item.setText(1, entry_list[i].getImageName());
 			one_item.setText(2, entry_list[i].getImageDesc());
 		}
-		//
-		// TableItem item = new TableItem(mainTable, SWT.NONE);
-		// item.setText(0, "2422");
-		// item.setText(1, "VCL2.2.1 SandBox");
-		// item.setText(2, "Our testing image1");
-		//
-		// TableItem item2 = new TableItem(mainTable, SWT.NONE);
-		// item2.setText(0, "2813");
-		// item2.setText(1, "centos_tunnel_main_campus");
-		// item2.setText(2, "Our testing image2");
-		//
-		// TableItem item3 = new TableItem(mainTable, SWT.NONE);
-		// item3.setText(0, "1913");
-		// item3.setText(1, "centos_tunnel_mcnc");
-		// item3.setText(2, "Our testing image3");
 	}
 
 	/**
@@ -620,16 +797,63 @@ public class MainOBAGUI {
 			dialog.setMessage("Please select one OBA instance to start");
 			dialog.open();
 		} else {
-			// Get all information needed for making a reservation
-			int oba_id = Integer.parseInt(selectedItems[0].getText(0));
-			final OBAEntry selectedOBAEntry = controller
-					.getOBAEntryByTableID(oba_id - 1);
+			final int image_id;
+			final String name;
+			final Calendar startTime;
+			final int duration;
+			final OBAEntry selectedOBAEntry;
+			if (btnRadioNow.getSelection()) {
+				// The reservation time is NOW, Get all the information needed for making a reservation
+				int oba_id = Integer.parseInt(selectedItems[0].getText(0));
+				selectedOBAEntry = controller
+						.getOBAEntryByTableID(oba_id - 1);
 
-			final int image_id = selectedOBAEntry.getImageID();
-			final String name = selectedOBAEntry.getImageName();
-			final Calendar startTime = Calendar.getInstance();
-			final int duration = (int) (all_possible_durations[duration_combo
-					.getSelectionIndex()] * 60);
+				image_id = selectedOBAEntry.getImageID();
+				name = selectedOBAEntry.getImageName();
+				startTime = Calendar.getInstance();
+				duration = (int) (all_possible_durations[duration_combo
+				                                         .getSelectionIndex()] * 60);
+			} else {
+				// The reservation time is LATER, Get all the information needed for making a reservation
+				int oba_id = Integer.parseInt(selectedItems[0].getText(0));
+				selectedOBAEntry = controller
+						.getOBAEntryByTableID(oba_id - 1);
+
+				image_id = selectedOBAEntry.getImageID();
+				name = selectedOBAEntry.getImageName();
+				Calendar now = Calendar.getInstance();
+				now.setFirstDayOfWeek(Calendar.SUNDAY);
+				int hour_day = 0;
+				int minute = combo_minute.getSelectionIndex() * 15;
+				int nowWeekDay = now.get(Calendar.DAY_OF_WEEK);
+				int selectedDay = combo_day.getSelectionIndex();
+				int selectedWeekDay = Calendar.SUNDAY + selectedDay;
+
+				if (combo_ampm.getSelectionIndex() == 0) {
+					// If it's AM
+					hour_day = combo_hour.getSelectionIndex() + 1;
+					if (hour_day == 12) {
+						hour_day = 0;
+					}
+				} else if (combo_ampm.getSelectionIndex() == 1) {
+					// If it's PM
+					hour_day = combo_hour.getSelectionIndex() + 13;
+					if (hour_day == 24) {
+						hour_day = 12;
+					}
+				}
+				startTime = Calendar.getInstance();
+				if (selectedWeekDay >= nowWeekDay) {
+					startTime.add(Calendar.DATE, selectedWeekDay - nowWeekDay);
+				} else {
+					startTime.add(Calendar.DATE, selectedWeekDay + 7 - nowWeekDay);
+				}
+				startTime.set(startTime.get(Calendar.YEAR), startTime.get(Calendar.MONTH), startTime.get(Calendar.DATE), hour_day, minute);
+
+				duration = (int) (all_possible_durations[duration_combo
+				                                         .getSelectionIndex()] * 60);
+			}
+
 			// Now switch to the Current active OBA tab
 			mainTabFolder.setSelection(2);
 
@@ -677,7 +901,7 @@ public class MainOBAGUI {
 						final int[] complete_percent = new int[1];
 						complete_percent[0] = 0;
 						boolean ready = false;
-
+						boolean future = false;
 						while (true) {
 							String[] status = controller.VCLConnector
 									.getPercentageStatus(new_OBA_bean);
@@ -686,6 +910,12 @@ public class MainOBAGUI {
 								// Delete the tableitem
 								statusTable.remove(item_index);
 								error_dialog.open();
+								break;
+							}
+
+							if (status[0].equals("future")) {
+								new_OBA_bean.setStatus(OBABean.FUTURE);
+								controller.addOBABean(new_OBA_bean);
 								break;
 							}
 
@@ -705,7 +935,8 @@ public class MainOBAGUI {
 												remain_time_str);
 									}
 								});
-								ready = true;
+								new_OBA_bean.setStatus(OBABean.READY);
+								controller.addOBABean(new_OBA_bean);
 								break;
 							} else if (complete_percent[0] >= 0) {
 								try {
@@ -740,12 +971,33 @@ public class MainOBAGUI {
 							}
 						}
 
-						if (ready) {
+						// If this is a future reservation
+						if (future) {
+							if (display.isDisposed())
+								return;
+							display.asyncExec(new Runnable() {
+								public void run() {
+									if (bar.isDisposed())
+										return;
+									bar.setSelection(complete_percent[0]);
+									one_status_Item.setText(status_Titles.get("Remaining Time"),
+											"Future Reservation");
+								}
+							});
+							return;
+						}
+						// If this reservation is ready
+						if (new_OBA_bean.getStatus() == OBABean.READY) {
 							final String[] conn_data = controller.VCLConnector
 									.getConnectData(new_OBA_bean.getRequestId());
 							new_OBA_bean.setIpAddress(conn_data[0]);
 							new_OBA_bean.setUsername(conn_data[1]);
 							new_OBA_bean.setPassword(conn_data[2]);
+							if (conn_data[2].equals(controller.VCLConnector.getPassword())) {
+								new_OBA_bean.setLogin_mode(OBABean.SSH_LOGIN);
+							} else {
+								new_OBA_bean.setLogin_mode(OBABean.RDP_LOGIN);
+							}
 
 							// Now update the statusTable item to show all
 							// available info
@@ -801,13 +1053,99 @@ public class MainOBAGUI {
 	}
 
 	/**
+	 * This function load an OBABean in to the 3rd tab of the MainOBAGUI
+	 * 
+	 * @param aBean
+	 */
+	private void loadOBABean(OBABean aBean) {
+
+		final TableItem one_status_Item = new TableItem(statusTable,
+				SWT.NONE);
+		one_status_Item.setText(0, Integer.toString(aBean.getImageId()));
+		one_status_Item.setText(1, aBean.getImageName());
+
+		final int item_index = statusTable.indexOf(one_status_Item);
+
+		// Add disposelistener to the one_status_item, so that when the
+		// table item is deleted,
+		// its editor should be deleted too.
+		one_status_Item.addDisposeListener(new DisposeListener() {
+
+			@Override
+			public void widgetDisposed(DisposeEvent arg0) {
+				// TODO Auto-generated method stub
+				//				bar.dispose();
+				//				editor.dispose();
+			}
+		});
+		if (aBean.getIpAddress() != null) {
+			one_status_Item.setText(
+					status_Titles.get("IP address"),
+					aBean.getIpAddress());
+		}
+		if (aBean.getUsername() != null) {
+			one_status_Item.setText(
+					status_Titles.get("Username"),
+					aBean.getUsername());
+		}
+		if (aBean.getPassword() != null) {
+			if (aBean.getPassword()
+					.equals(controller.VCLConnector
+							.getPassword())) {
+				one_status_Item.setText(
+						status_Titles.get("Password"),
+						"(use your campus password)");
+			} else {
+				one_status_Item.setText(
+						status_Titles.get("Password"),
+						aBean.getPassword());
+			}
+		}
+		switch (aBean.getStatus()) {
+		case OBABean.READY:
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"READY");
+			break;
+		case OBABean.LOADING:
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"LOADING");
+			break;
+		case OBABean.TIMEDOUT:
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"TIMEDOUT");
+			break;
+		case OBABean.FAILED:
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"FAILED");
+			break;
+		default :
+			one_status_Item.setText(
+					status_Titles.get("Remaining Time"),
+					"UNKNOWN STATUS");
+			break;
+		}
+		one_status_Item.setText(status_Titles
+				.get("Request ID"), Integer
+				.toString(aBean
+						.getRequestId()));
+	}
+	/**
 	 * TODO : fill the code This method take an ArrayList of OBABean and load it
 	 * into a table
 	 * 
 	 * @param reservationList
 	 */
-	private void loadReservations(Table mainTable,
+	void loadReservations(
 			HashMap<Integer, OBABean> reservationList) {
 
+		Collection<OBABean> c = reservationList.values();
+		Iterator<OBABean> itr = c.iterator();
+		while(itr.hasNext()) {
+			loadOBABean(itr.next());
+		}
 	}
 }
