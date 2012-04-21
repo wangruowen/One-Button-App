@@ -113,6 +113,8 @@ public class LoginDialog {
 					dialog.setText("No Username or Password Found!");
 					dialog.setMessage("Please enter correct username and password.");
 					dialog.open();
+					UsernameText.setText("");
+					PasswordText.setText("");
 					return;
 				}
 				// We need to use VCL XML RPC to check whether the
@@ -124,6 +126,8 @@ public class LoginDialog {
 					dialog.setText("Login fail!");
 					dialog.setMessage("Login fail! Please enter correct username and password.");
 					dialog.open();
+					UsernameText.setText("");
+					PasswordText.setText("");
 					return;
 				} else {
 					// if user chose to store his password

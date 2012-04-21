@@ -81,6 +81,11 @@ public class OBAController {
 		}
 	}
 
+	public void signInAsDifferentUser() {
+		DBManager = OBADBManager.getInstance();
+		DBManager.clearLoginTable();
+	}
+
 	/**
 	 * Try to login with this couple of username and password
 	 * 

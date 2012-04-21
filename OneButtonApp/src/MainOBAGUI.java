@@ -710,7 +710,7 @@ public class MainOBAGUI {
 		});
 
 		FormData fd_table_1 = new FormData();
-		fd_table_1.bottom = new FormAttachment(100, -10);
+		// fd_table_1.bottom = new FormAttachment(100, -10);
 		fd_table_1.right = new FormAttachment(100, -10);
 		fd_table_1.top = new FormAttachment(0, 10);
 		fd_table_1.left = new FormAttachment(0, 10);
@@ -728,8 +728,27 @@ public class MainOBAGUI {
 			TableColumn column = new TableColumn(statusTable, SWT.NONE);
 			column.setText(tmp_titleString[i]);
 			column.setResizable(true);
-
 		}
+
+		Button btnLogoutButton = new Button(composite, SWT.NONE);
+		btnLogoutButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// System.out.println("Button pressed");
+				controller.signInAsDifferentUser();
+				display.dispose();
+				LoginDialog login = new LoginDialog();
+				login.show();
+			}
+		});
+		fd_table_1.bottom = new FormAttachment(btnLogoutButton, -10);
+		FormData fd_btnNewButton = new FormData();
+		fd_btnNewButton.top = new FormAttachment(100, -40);
+		fd_btnNewButton.bottom = new FormAttachment(100, -10);
+		fd_btnNewButton.right = new FormAttachment(100, -10);
+		fd_btnNewButton.left = new FormAttachment(100, -208);
+		btnLogoutButton.setLayoutData(fd_btnNewButton);
+		btnLogoutButton.setText("Sign in As Different User");
 	}
 
 	private class StatusMenuLisnter extends SelectionAdapter {

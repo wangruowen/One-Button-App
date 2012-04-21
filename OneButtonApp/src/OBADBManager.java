@@ -31,6 +31,10 @@ public class OBADBManager {
 
 	}
 
+	public void clearLoginTable() {
+		PasswordManager.deleteTable();
+	}
+
 	/**
 	 * Look at the SQlite database and get the saved password and username if
 	 * exist
