@@ -107,7 +107,13 @@ public class OBALogic {
 		Object[] params = new Object[3];
 		params[0] = imageid;
 		params[1] = (int) (start.getTimeInMillis() / 1000L);
-		params[2] = duration;
+
+		int unroundedMinutes = start.get(Calendar.MINUTE);
+		if (unroundedMinutes == 0 || unroundedMinutes % 15 == 0)
+			params[2] = duration;
+		else
+			params[2] = duration + 15;
+
 		HashMap result = (HashMap) xmlRPCcall("XMLRPCaddRequest", params);
 
 		if (result.get("status").equals("success")) {
@@ -239,16 +245,13 @@ public class OBALogic {
 				boolean isReserved = req_status[0].equals("ready");
 				if (isReserved) {
 					conn_data = getConnectData(requestid);
-					// if (conn_data[2] == this.password) {
-					// // Here we cannot simply say the password using UnitID
-					// password is using SSH is
-					// login_mode = OBABean.SSH_LOGIN;
-					// } else {
-					// // It is also possible that some Linux images using
-					// one-time password,
-					// // we can't simply assume they are using RDP.
-					// login_mode = OBABean.RDP_LOGIN;
-					// }
+					// Ruowen: I don't think we can simply assign login mode
+					// based on password pattern.
+					/*
+					 * if (conn_data[2] == this.password) { login_mode =
+					 * OBABean.SSH_LOGIN; } else { login_mode =
+					 * OBABean.RDP_LOGIN; }
+					 */
 				} else {
 					conn_data[0] = null;
 					conn_data[1] = null;
@@ -270,6 +273,7 @@ public class OBALogic {
 						conn_data[2], requestid, conn_data[0],
 						Platform.Windows, start, end, duration, status,
 						isReserved, null);
+
 				reservationList.put(requestid, newBean);
 			}
 
@@ -449,5 +453,4 @@ public class OBALogic {
 		return aBean.getStatus();
 
 	}
-
 }

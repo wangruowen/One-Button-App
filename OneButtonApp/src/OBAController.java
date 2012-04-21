@@ -47,7 +47,9 @@ public class OBAController {
 		this.reservationsList = new HashMap<Integer, OBABean>();
 		this.reverseOBAentryHashMap = new HashMap<String, Integer>();
 
-		if (loginWithSavePasswd(savedUserInfos)) {
+		PasswordCheckingDialog checkPasswordDialog = new PasswordCheckingDialog();
+		if (savedUserInfos != null
+				&& checkPasswordDialog.checkPassword(savedUserInfos)) {
 			username = savedUserInfos[0];
 			password = savedUserInfos[1];
 			setVCLConnector(username, password);
@@ -87,13 +89,9 @@ public class OBAController {
 	 *         controller and return true if not delete the store password in
 	 *         the database, return false;
 	 */
-	private boolean loginWithSavePasswd(String[] savedUserInfos) {
+	public boolean loginWithSavePasswd(String[] savedUserInfos) {
 		OBALogic oba_inst = new OBALogic(savedUserInfos[0], savedUserInfos[1]);
 		return oba_inst.loginCheck();
-	}
-
-	public void loadCurrentReservationsVCL() {
-
 	}
 
 	/**
@@ -125,7 +123,7 @@ public class OBAController {
 
 			return reservationsList;
 		} else {
-			return reservationsList;
+			return this.reservationsList;
 		}
 	}
 
@@ -161,7 +159,7 @@ public class OBAController {
 			result_Bean = new OBABean(image_id, image_name, username, password,
 					request_id, null, Platform.Windows, start_Time, null,
 					duration, OBABean.UNKNOWN_STATUS, false, ownerEntry);
-			reservationsList.put(request_id, result_Bean);
+			// reservationsList.put(request_id, result_Bean);
 		}
 
 		return result_Bean;
@@ -233,11 +231,11 @@ public class OBAController {
 	public int getImageIDByImageName(String image_name) {
 		return this.reverseOBAentryHashMap.get(image_name);
 	}
-	
+
 	public OBABean getOBABean(int selectedOBABeanRequestID) {
 		return this.reservationsList.get(selectedOBABeanRequestID);
 	}
-	
+
 	public void addOBABean(OBABean aBean) {
 		this.reservationsList.put(aBean.getRequestId(), aBean);
 	}

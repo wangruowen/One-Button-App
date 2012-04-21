@@ -41,7 +41,7 @@ public class OBABean {
 
 	public static final int SSH_LOGIN = 0;
 	public static final int RDP_LOGIN = 1;
-	
+
 	public static final int UNKNOWN_STATUS = 0;
 	public static final int READY = 1;
 	public static final int LOADING = 2;
