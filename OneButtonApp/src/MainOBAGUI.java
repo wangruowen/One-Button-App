@@ -1055,21 +1055,52 @@ public class MainOBAGUI {
 																&& new_OBA_bean
 																		.isIs_autoextend()) {
 															// Extend 30 minutes
-															if (!controller.VCLConnector
-																	.extendReservation(
-																			new_OBA_bean
-																					.getRequestId(),
-																			30)) {
-																// No more
-																// extend is
-																// allowed.
-																return;
-															}
-															// Update the
-															// OBABean's endtime
-															// and
-															// duration
-															remain_minutes += 30;
+															final int tmp_ref = remain_minutes;
+															new Thread() {
+																@Override
+																public void run() {
+																	// TODO
+																	// Auto-generated
+																	// method
+																	// stub
+																	if (!controller.VCLConnector
+																			.extendReservation(
+																					new_OBA_bean
+																							.getRequestId(),
+																					30)) {
+																		// No
+																		// more
+																		// extend
+																		// is
+																		// allowed.
+																		return;
+																	}
+																	// Update
+																	// the
+																	// OBABean's
+																	// endtime
+																	// and
+																	// duration
+																	int new_remain_minutes = tmp_ref + 30;
+																	final String durString = new_remain_minutes
+																			+ " minutes";
+																	display.asyncExec(new Runnable() {
+
+																		@Override
+																		public void run() {
+																			// TODO
+																			// Auto-generated
+																			// method
+																			// stub
+																			one_status_Item
+																					.setText(
+																							3,
+																							durString);
+																		}
+																	});
+
+																}
+															}.start();
 														}
 
 														// Update the table item
