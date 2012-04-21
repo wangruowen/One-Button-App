@@ -221,18 +221,18 @@ public class OBALogic {
 			Object[] res = (Object[]) result.get("requests");
 			for (int i = 0; i < res.length; i++) {
 				Calendar start = Calendar.getInstance();
-				long start_long = (Integer) ((HashMap) res[i]).get("start");
+				int start_long = (Integer) ((HashMap) res[i]).get("start");
 				;
 				start.setTimeInMillis(start_long * 1000);
 				System.out.println(start.getTime().toString());
 
 				Calendar end = Calendar.getInstance();
-				long end_long = (Integer) ((HashMap) res[i]).get("end");
+				int end_long = (Integer) ((HashMap) res[i]).get("end");
 				;
 				end.setTimeInMillis(end_long * 1000);
 				System.out.println(end.getTime().toString());
 
-				long duration = (end_long - start_long) / 60;
+				int duration = (end_long - start_long) / 60;
 				int requestid = Integer.parseInt((String) ((HashMap) res[i])
 						.get("requestid"));
 				int imageid = Integer.parseInt((String) ((HashMap) res[i])
@@ -272,7 +272,7 @@ public class OBALogic {
 				OBABean newBean = new OBABean(imageid, imagename, conn_data[1],
 						conn_data[2], requestid, conn_data[0],
 						Platform.Windows, start, end, duration, status,
-						isReserved, null);
+						isReserved, null, false);
 
 				reservationList.put(requestid, newBean);
 			}

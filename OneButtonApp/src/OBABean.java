@@ -22,12 +22,13 @@ public class OBABean {
 	private String ipAddress;
 	private Calendar startTime;
 	private Calendar endTime;
-	private long duration;
+	private int duration;
 	private Platform clientPlatform;
 	private boolean isReserved;
 	private int initialLoadingTime;
 	private int tmp_login_mode;
 	private int status;
+	private boolean is_autoextend;
 
 	public int getStatus() {
 		return status;
@@ -72,7 +73,8 @@ public class OBABean {
 	public OBABean(int imageId, String imageName, final String username,
 			final String password, int requestId, String ipAddress,
 			Platform clientPlatform, Calendar startTime, Calendar endTime,
-			long duration, int status, boolean isReserved, OBAEntry ownerEntry) {
+			int duration, int status, boolean isReserved, OBAEntry ownerEntry,
+			boolean auto_extend) {
 
 		setImageId(imageId);
 		setImageName(imageName);
@@ -93,6 +95,7 @@ public class OBABean {
 		} else {
 			this.tmp_login_mode = -1;
 		}
+		setIs_autoextend(auto_extend);
 	}
 
 	/**
@@ -349,7 +352,7 @@ public class OBABean {
 	 * @param duration
 	 *            the duration to set
 	 */
-	public void setDuration(long duration) {
+	public void setDuration(int duration) {
 		this.duration = duration;
 	}
 
@@ -428,5 +431,13 @@ public class OBABean {
 	public void setOwnerEntry(OBAEntry ownerEntry) {
 		this.ownerEntry = ownerEntry;
 		this.tmp_login_mode = ownerEntry.getLoginMode();
+	}
+
+	public boolean isIs_autoextend() {
+		return is_autoextend;
+	}
+
+	public void setIs_autoextend(boolean is_autoextend) {
+		this.is_autoextend = is_autoextend;
 	}
 }

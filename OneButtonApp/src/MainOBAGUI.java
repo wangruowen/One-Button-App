@@ -63,6 +63,7 @@ public class MainOBAGUI {
 	private Combo combo_minute;
 	private Combo combo_ampm;
 	private Button btnRadioNow;
+	private Button btnTimeAutoExtCheckButton;
 	private float[] all_possible_durations;
 	private String[] tmp_titleString;
 	private HashMap<String, Integer> status_Titles;
@@ -110,6 +111,7 @@ public class MainOBAGUI {
 
 			public void shellClosed(ShellEvent arg0) {
 				System.out.println("close");
+				display.dispose();
 				// System.exit(0);
 
 				// Ruowen, We cannot simply exit here. When MainOBAGUI closes,
@@ -142,7 +144,6 @@ public class MainOBAGUI {
 	}
 
 	private void startTrayIcon() {
-
 		if (SystemTray.isSupported()) {
 
 			SystemTray tray = SystemTray.getSystemTray();
@@ -318,18 +319,19 @@ public class MainOBAGUI {
 		btnOba.setLayoutData(fd_btnOba);
 		btnOba.setText("One Button Start");
 
-		Button btnCheckButton = new Button(compo1, SWT.CHECK);
+		btnTimeAutoExtCheckButton = new Button(compo1, SWT.CHECK);
 		FormData fd_btnCheckButton = new FormData();
 		fd_btnCheckButton.bottom = new FormAttachment(100, -10);
 		fd_btnCheckButton.left = new FormAttachment(0, 10);
-		btnCheckButton.setLayoutData(fd_btnCheckButton);
-		btnCheckButton.setText("Enable Automatic Time Extending");
+		btnTimeAutoExtCheckButton.setLayoutData(fd_btnCheckButton);
+		btnTimeAutoExtCheckButton.setText("Enable Automatic Time Extending");
 
 		Label lblDuration = new Label(compo1, SWT.NONE);
 		lblDuration.setText("Duration: ");
 		FormData fd_lblDuration = new FormData();
 		fd_lblDuration.left = new FormAttachment(0, 10);
-		fd_lblDuration.bottom = new FormAttachment(btnCheckButton, -10);
+		fd_lblDuration.bottom = new FormAttachment(btnTimeAutoExtCheckButton,
+				-10);
 		lblDuration.setLayoutData(fd_lblDuration);
 
 		duration_combo = new Combo(compo1, SWT.NONE);
@@ -355,7 +357,7 @@ public class MainOBAGUI {
 		duration_combo.select(2);
 
 		FormData fd_combo = new FormData();
-		fd_combo.bottom = new FormAttachment(btnCheckButton, -6);
+		fd_combo.bottom = new FormAttachment(btnTimeAutoExtCheckButton, -6);
 		fd_combo.left = new FormAttachment(lblDuration, 8);
 		duration_combo.setLayoutData(fd_combo);
 
@@ -852,6 +854,8 @@ public class MainOBAGUI {
 			final String name;
 			final Calendar startTime;
 			final int duration;
+			final boolean is_autoextend = btnTimeAutoExtCheckButton
+					.getSelection();
 			final OBAEntry selectedOBAEntry;
 			if (btnRadioNow.getSelection()) {
 				// The reservation time is NOW, Get all the information needed
@@ -956,13 +960,14 @@ public class MainOBAGUI {
 			new Thread() {
 				public void run() {
 					final OBABean new_OBA_bean = controller.launchOBA(
-							selectedOBAEntry, startTime, duration);
+							selectedOBAEntry, startTime, duration,
+							is_autoextend);
 					if (new_OBA_bean != null) {
 						// Now start polling status
 						final int[] complete_percent = new int[1];
 						complete_percent[0] = 0;
-						boolean ready = false;
 						boolean future = false;
+
 						while (true) {
 							String[] status = controller.VCLConnector
 									.getPercentageStatus(new_OBA_bean);
@@ -980,10 +985,24 @@ public class MainOBAGUI {
 								break;
 							}
 
-							complete_percent[0] = Integer.parseInt(status[0]);
+							int current_percent = Integer.parseInt(status[0]);
+
 							final String remain_time_str = status[1];
 
 							complete_percent[0]++;
+							int add_upper_bound = (int) (100.0 / new_OBA_bean
+									.getInitialLoadingTime());
+							if (complete_percent[0] < current_percent) {
+								complete_percent[0] = current_percent;
+							} else if (complete_percent[0] >= current_percent
+									+ add_upper_bound) {
+								// We have added too much to the
+								// complete_percent[0], stop adding
+								complete_percent[0] = current_percent
+										+ add_upper_bound;
+							}
+
+							// If the reservation is ready
 							if (complete_percent[0] >= 100) {
 								if (display.isDisposed())
 									return;
@@ -992,10 +1011,89 @@ public class MainOBAGUI {
 										if (bar.isDisposed())
 											return;
 										bar.setSelection(complete_percent[0]);
-										one_status_Item.setText(3,
+										bar.dispose();
+										editor.dispose();
+										// Change the progress bar to show the
+										// Ready status, and set the Remaining
+										// Time to the duration
+										one_status_Item.setText(2,
 												remain_time_str);
+										int duration_minutes = (int) new_OBA_bean
+												.getDuration();
+										String duration_time_str = Integer
+												.toString(duration_minutes);
+										if (duration_minutes == 1) {
+											duration_time_str += " minute";
+										} else {
+											duration_time_str += " minutes";
+										}
+										one_status_Item.setText(3,
+												duration_time_str);
+
+										if (new_OBA_bean.isIs_autoextend()) {
+											one_status_Item.setText(4,
+													"Enabled");
+										} else {
+											one_status_Item.setText(4,
+													"Disabled");
+										}
+										// Every minute, we check whether it is
+										// the last
+										// 10 minutes of the reservation
+										// duration
+										display.timerExec(60000,
+												new Runnable() {
+													public void run() {
+														int remain_minutes = Integer
+																.parseInt(one_status_Item
+																		.getText(
+																				3)
+																		.split(" ")[0]);
+														remain_minutes--;
+
+														if (remain_minutes <= 10
+																&& new_OBA_bean
+																		.isIs_autoextend()) {
+															// Extend 30 minutes
+															if (!controller.VCLConnector
+																	.extendReservation(
+																			new_OBA_bean
+																					.getRequestId(),
+																			30)) {
+																// No more
+																// extend is
+																// allowed.
+																return;
+															}
+															// Update the
+															// OBABean's endtime
+															// and
+															// duration
+															remain_minutes += 30;
+														}
+
+														// Update the table item
+														// showing the
+														// remaining time.
+														String durString;
+														if (remain_minutes == 1) {
+															durString = remain_minutes
+																	+ " minute";
+														} else {
+															durString = remain_minutes
+																	+ " minutes";
+														}
+														one_status_Item
+																.setText(3,
+																		durString);
+														// Repeat
+														display.timerExec(
+																60000, this);
+													}
+												});
 									}
 								});
+
 								new_OBA_bean.setStatus(OBABean.READY);
 								controller.addOBABean(new_OBA_bean);
 								break;
@@ -1012,8 +1110,18 @@ public class MainOBAGUI {
 											return;
 										}
 										bar.setSelection(complete_percent[0]);
-										one_status_Item.setText(3,
-												remain_time_str);
+
+										String remain_time;
+										if (remain_time_str.equals("1")) {
+											remain_time = Integer
+													.parseInt(remain_time_str)
+													+ " minute";
+										} else {
+											remain_time = Integer
+													.parseInt(remain_time_str)
+													+ " minutes";
+										}
+										one_status_Item.setText(3, remain_time);
 									}
 								});
 							} else {
@@ -1057,12 +1165,12 @@ public class MainOBAGUI {
 							new_OBA_bean.setPassword(conn_data[2]);
 							// TODO, Ruowen, I don't think we can directly
 							// assign ssh/rdp based on password pattern
-							if (conn_data[2].equals(controller.VCLConnector
-									.getPassword())) {
-								new_OBA_bean.setLogin_mode(OBABean.SSH_LOGIN);
-							} else {
-								new_OBA_bean.setLogin_mode(OBABean.RDP_LOGIN);
-							}
+							// if (conn_data[2].equals(controller.VCLConnector
+							// .getPassword())) {
+							// new_OBA_bean.setLogin_mode(OBABean.SSH_LOGIN);
+							// } else {
+							// new_OBA_bean.setLogin_mode(OBABean.RDP_LOGIN);
+							// }
 
 							// Now update the statusTable item to show all
 							// available info
@@ -1070,8 +1178,6 @@ public class MainOBAGUI {
 								return;
 							display.asyncExec(new Runnable() {
 								public void run() {
-									if (bar.isDisposed())
-										return;
 									one_status_Item.setText(
 											status_Titles.get("IP address"),
 											conn_data[0]);
@@ -1104,8 +1210,6 @@ public class MainOBAGUI {
 							return;
 						display.asyncExec(new Runnable() {
 							public void run() {
-								if (bar.isDisposed())
-									return;
 								// Delete the tableitem
 								statusTable.remove(item_index);
 							}
@@ -1150,23 +1254,19 @@ public class MainOBAGUI {
 		}
 		switch (aBean.getStatus()) {
 		case OBABean.READY:
-			one_status_Item.setText(status_Titles.get("Remaining Time"),
-					"READY");
+			one_status_Item.setText(status_Titles.get("Status"), "READY");
 			break;
 		case OBABean.LOADING:
-			one_status_Item.setText(status_Titles.get("Remaining Time"),
-					"LOADING");
+			one_status_Item.setText(status_Titles.get("Status"), "LOADING");
 			break;
 		case OBABean.TIMEDOUT:
-			one_status_Item.setText(status_Titles.get("Remaining Time"),
-					"TIMEDOUT");
+			one_status_Item.setText(status_Titles.get("Status"), "TIMEDOUT");
 			break;
 		case OBABean.FAILED:
-			one_status_Item.setText(status_Titles.get("Remaining Time"),
-					"FAILED");
+			one_status_Item.setText(status_Titles.get("Status"), "FAILED");
 			break;
 		default:
-			one_status_Item.setText(status_Titles.get("Remaining Time"),
+			one_status_Item.setText(status_Titles.get("Status"),
 					"UNKNOWN STATUS");
 			break;
 		}

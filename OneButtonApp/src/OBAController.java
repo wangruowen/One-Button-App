@@ -58,7 +58,6 @@ public class OBAController {
 			loginOBA = new LoginDialog();
 			loginOBA.show();
 		}
-
 	}
 
 	public void showMainOBA() {
@@ -148,7 +147,7 @@ public class OBAController {
 	 * @return true if login success, false if not.
 	 */
 	public OBABean launchOBA(OBAEntry ownerEntry, Calendar start_Time,
-			int duration) {
+			int duration, boolean auto_extend) {
 		OBABean result_Bean = null;
 
 		int image_id = ownerEntry.getImageID();
@@ -163,7 +162,8 @@ public class OBAController {
 			// At this time, IP address is not available.
 			result_Bean = new OBABean(image_id, image_name, username, password,
 					request_id, null, Platform.Windows, start_Time, null,
-					duration, OBABean.UNKNOWN_STATUS, false, ownerEntry);
+					duration, OBABean.UNKNOWN_STATUS, false, ownerEntry,
+					auto_extend);
 			// reservationsList.put(request_id, result_Bean);
 		}
 
