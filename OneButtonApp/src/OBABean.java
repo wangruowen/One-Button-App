@@ -230,12 +230,12 @@ public class OBABean {
 			// Determine if you need to connect to the host via RDP or SSH
 			if (RDP.isHostRDPReady(getIpAddress())) {
 				this.tmp_login_mode = RDP_LOGIN;
-				if (this.ownerEntry)
+				if (this.ownerEntry != null)
 					this.ownerEntry.setLoginMode(RDP_LOGIN);
 				rdpLaunch(conn_data); // use RDP to login to the terminal
 			} else {
 				this.tmp_login_mode = SSH_LOGIN;
-				if (this.ownerEntry)
+				if (this.ownerEntry != null)
 					this.ownerEntry.setLoginMode(SSH_LOGIN);
 				termLaunch(conn_data); // use ssh to login to the terminal
 			}

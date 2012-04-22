@@ -1,15 +1,8 @@
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.security.MessageDigest;
-
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
 
 import java.security.spec.AlgorithmParameterSpec;
 import javax.crypto.KeyGenerator;
@@ -61,26 +54,6 @@ public class Crypto {
         }
     }
 
-    // Buffer used to transport the bytes from one stream to another
-    byte[] buf = new byte[1024];
-
-    public void encrypt(InputStream in, OutputStream out){
-        try {
-            // Bytes written to out will be encrypted
-            out = new CipherOutputStream(out, ecipher);
-
-            // Read in the cleartext bytes and write to out to encrypt
-            int numRead = 0;
-            while ((numRead = in.read(buf)) >= 0){
-                out.write(buf, 0, numRead);
-            }
-            out.close();
-        }
-        catch (java.io.IOException e){
-            e.printStackTrace();
-        }
-    }
-
     /**
     * Input is a string to encrypt.
     * @return a Hex string of the byte array
@@ -88,28 +61,12 @@ public class Crypto {
     public String encrypt(String plaintext){
         try{
             byte[] ciphertext = ecipher.doFinal(plaintext.getBytes("UTF-8"));
-            return this.byteToHex(ciphertext);
+            return Crypto.byteToHex(ciphertext);
         } catch (Exception e){
              e.printStackTrace();
             return null;
         }
 
-    }
-
-    public void decrypt(InputStream in, OutputStream out){
-        try {
-            // Bytes read from in will be decrypted
-            in = new CipherInputStream(in, dcipher);
-
-            // Read in the decrypted bytes and write the cleartext to out
-            int numRead = 0;
-            while ((numRead = in.read(buf)) >= 0) {
-                out.write(buf, 0, numRead);
-            }
-            out.close();
-        } catch (java.io.IOException e) {
-             e.printStackTrace();
-        }
     }
 
     /**
@@ -118,7 +75,7 @@ public class Crypto {
     */
     public String decrypt(String hexCipherText){
         try{
-            String plaintext = new String(dcipher.doFinal(this.hexToByte(hexCipherText)), "UTF-8");
+            String plaintext = new String(dcipher.doFinal(Crypto.hexToByte(hexCipherText)), "UTF-8");
             return  plaintext;
         } catch (Exception e){
             e.printStackTrace();
@@ -167,27 +124,5 @@ public class Crypto {
             ba[i/2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4) + Character.digit(hexString.charAt(i+1), 16));
         }
         return ba;
-    }
-
-    public static void main(String args[]){
-        try {
-                String key = "I like cookies";
-                Crypto encrypter = new Crypto(key);
-                //Crypto encrypter = new Crypto();
-
-                // Encrypt
-                encrypter.encrypt(new FileInputStream("C:/temp/one.txt"),new FileOutputStream("C:/temp/Encrypted.txt"));
-                // Decrypt
-                encrypter.decrypt(new FileInputStream("c:/temp/Encrypted.txt"),new FileOutputStream("c:/temp/Decrypted.txt"));
-
-                String cyphertext = encrypter.encrypt("ABCDEFG");
-                System.out.println(cyphertext);
-
-                String plaintext = encrypter.decrypt(cyphertext);
-                System.out.println(plaintext);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }
