@@ -247,11 +247,11 @@ public class OBALogic {
 					conn_data = getConnectData(requestid);
 					// Ruowen: I don't think we can simply assign login mode
 					// based on password pattern.
-					/*
-					 * if (conn_data[2] == this.password) { login_mode =
-					 * OBABean.SSH_LOGIN; } else { login_mode =
-					 * OBABean.RDP_LOGIN; }
-					 */
+					// Tuan : keep it for now until we have better solution
+					 if (conn_data[2] == this.password) { login_mode =
+					 OBABean.SSH_LOGIN; } else { login_mode =
+					 OBABean.RDP_LOGIN; }
+					 
 				} else {
 					conn_data[0] = null;
 					conn_data[1] = null;

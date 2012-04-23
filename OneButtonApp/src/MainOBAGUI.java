@@ -1236,12 +1236,13 @@ public class MainOBAGUI {
 							new_OBA_bean.setPassword(conn_data[2]);
 							// TODO, Ruowen, I don't think we can directly
 							// assign ssh/rdp based on password pattern
-							// if (conn_data[2].equals(controller.VCLConnector
-							// .getPassword())) {
-							// new_OBA_bean.setLogin_mode(OBABean.SSH_LOGIN);
-							// } else {
-							// new_OBA_bean.setLogin_mode(OBABean.RDP_LOGIN);
-							// }
+							// Tuan : keep it for now until we have better solution
+							 if (conn_data[2].equals(controller.VCLConnector
+							 .getPassword())) {
+							 new_OBA_bean.setLogin_mode(OBABean.SSH_LOGIN);
+							 } else {
+							 new_OBA_bean.setLogin_mode(OBABean.RDP_LOGIN);
+							 }
 
 							// Now update the statusTable item to show all
 							// available info
