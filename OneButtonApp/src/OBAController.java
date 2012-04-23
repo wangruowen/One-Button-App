@@ -73,11 +73,7 @@ public class OBAController {
 		// about to end.
 		// We should check whether any new OBAEntry is created and store them
 		// back to the database
-		if (!newlyCreatedOBAEntryList.isEmpty()) {
-			for (OBAEntry each_new_entry : newlyCreatedOBAEntryList) {
-				DBManager.storeOBAEntry(username, each_new_entry);
-			}
-		}
+		beforeQuit();
 	}
 
 	public void signInAsDifferentUser() {
@@ -243,5 +239,13 @@ public class OBAController {
 
 	public void addOBABean(OBABean aBean) {
 		this.reservationsList.put(aBean.getRequestId(), aBean);
+	}
+	
+	public void beforeQuit() {
+		if (!newlyCreatedOBAEntryList.isEmpty()) {
+			for (OBAEntry each_new_entry : newlyCreatedOBAEntryList) {
+				DBManager.storeOBAEntry(username, each_new_entry);
+			}
+		}
 	}
 }

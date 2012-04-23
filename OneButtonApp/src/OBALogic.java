@@ -448,7 +448,7 @@ public class OBALogic {
 			aBean.setStatus(OBABean.FAILED);
 		} else {
 			System.err.println("Fail to update the status of OBABean.");
-			return -1;
+			aBean.setStatus(OBABean.UNKNOWN_STATUS);
 		}
 		return aBean.getStatus();
 

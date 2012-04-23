@@ -91,9 +91,19 @@ public class MainOBAGUI {
 
 		// We should use a Thread to load current active reservation, to
 		// avoid hanging the main GUI
+
 		display.asyncExec(new Runnable() {
 			public void run() {
 				loadReservations(controller.getCurrentReservations());
+			}
+		});
+		display.timerExec(60000,
+				new Runnable() {
+			public void run() {
+				System.out.print("update table\n");
+				updateStatusOBATable();
+				// Repeat
+				display.timerExec(60000, this);
 			}
 		});
 
@@ -112,11 +122,16 @@ public class MainOBAGUI {
 			public void shellClosed(ShellEvent arg0) {
 				System.out.println("close");
 				display.dispose();
-				// System.exit(0);
+				controller.beforeQuit();
+				System.exit(0);
 
 				// Ruowen, We cannot simply exit here. When MainOBAGUI closes,
 				// the control should return back to the OBAController,
 				// to store new OBAEntry back to the database.
+				
+				// Tuan: This pb is resoluted by the function beforeQuit in controller
+				// this is when user click on the close button of the form. the function beforeQuit
+				// will do all the necessary job like save image data.
 			}
 
 			public void shellDeactivated(ShellEvent arg0) {
@@ -195,6 +210,7 @@ public class MainOBAGUI {
 							shell.dispose();
 						}
 					});
+					controller.beforeQuit();
 					System.exit(0);
 				}
 			};
@@ -433,9 +449,9 @@ public class MainOBAGUI {
 						|| ((duration_combo.getSelectionIndex() >= 0)
 								&& (btnRadioLater.getSelection())
 								&& (combo_day.getSelectionIndex() >= 0) && (combo_hour
-								.getSelectionIndex() >= 0))
-						&& (combo_minute.getSelectionIndex() >= 0)
-						&& (combo_ampm.getSelectionIndex() >= 0)) {
+										.getSelectionIndex() >= 0))
+										&& (combo_minute.getSelectionIndex() >= 0)
+										&& (combo_ampm.getSelectionIndex() >= 0)) {
 					start_one_OBA_instance(table.getSelection());
 				} else {
 					MessageBox dialog = new MessageBox(shell, SWT.ICON_ERROR
@@ -493,9 +509,9 @@ public class MainOBAGUI {
 							|| ((duration_combo.getSelectionIndex() >= 0)
 									&& (btnRadioLater.getSelection())
 									&& (combo_day.getSelectionIndex() >= 0) && (combo_hour
-									.getSelectionIndex() >= 0))
-							&& (combo_minute.getSelectionIndex() >= 0)
-							&& (combo_ampm.getSelectionIndex() >= 0)) {
+											.getSelectionIndex() >= 0))
+											&& (combo_minute.getSelectionIndex() >= 0)
+											&& (combo_ampm.getSelectionIndex() >= 0)) {
 						start_one_OBA_instance(table.getSelection());
 					} else {
 						MessageBox dialog = new MessageBox(shell,
@@ -706,6 +722,30 @@ public class MainOBAGUI {
 					controller.VCLConnector.updateStatus(selectedBean);
 					if (selectedBean.getStatus() == OBABean.READY) {
 						selectedBean.start();
+					} else {
+						switch (selectedBean.getStatus()) {
+						case OBABean.READY:
+							statusTable
+							.getSelection()[0].setText(status_Titles.get("Status"), "READY");
+							break;
+						case OBABean.LOADING:
+							statusTable
+							.getSelection()[0].setText(status_Titles.get("Status"), "LOADING");
+							break;
+						case OBABean.TIMEDOUT:
+							statusTable
+							.getSelection()[0].setText(status_Titles.get("Status"), "TIMEDOUT");
+							break;
+						case OBABean.FAILED:
+							statusTable
+							.getSelection()[0].setText(status_Titles.get("Status"), "FAILED");
+							break;
+						default:
+							statusTable
+							.getSelection()[0].setText(status_Titles.get("Status"),
+									"UNKNOWN STATUS");
+							break;
+						}
 					}
 				}
 			}
@@ -867,7 +907,7 @@ public class MainOBAGUI {
 				name = selectedOBAEntry.getImageName();
 				startTime = Calendar.getInstance();
 				duration = (int) (all_possible_durations[duration_combo
-						.getSelectionIndex()] * 60);
+				                                         .getSelectionIndex()] * 60);
 			} else {
 				// The reservation time is LATER, Get all the information needed
 				// for making a reservation
@@ -909,7 +949,7 @@ public class MainOBAGUI {
 						startTime.get(Calendar.DATE), hour_day, minute);
 
 				duration = (int) (all_possible_durations[duration_combo
-						.getSelectionIndex()] * 60);
+				                                         .getSelectionIndex()] * 60);
 			}
 
 			// Now switch to the Current active OBA tab
@@ -1043,85 +1083,85 @@ public class MainOBAGUI {
 										// duration
 										display.timerExec(60000,
 												new Runnable() {
-													public void run() {
-														int remain_minutes = Integer
-																.parseInt(one_status_Item
-																		.getText(
-																				3)
+											public void run() {
+												int remain_minutes = Integer
+														.parseInt(one_status_Item
+																.getText(
+																		3)
 																		.split(" ")[0]);
-														remain_minutes--;
+												remain_minutes--;
 
-														if (remain_minutes <= 10
-																&& new_OBA_bean
-																		.isIs_autoextend()) {
-															// Extend 30 minutes
-															final int tmp_ref = remain_minutes;
-															new Thread() {
+												if (remain_minutes <= 10
+														&& new_OBA_bean
+														.isIs_autoextend()) {
+													// Extend 30 minutes
+													final int tmp_ref = remain_minutes;
+													new Thread() {
+														@Override
+														public void run() {
+															// TODO
+															// Auto-generated
+															// method
+															// stub
+															if (!controller.VCLConnector
+																	.extendReservation(
+																			new_OBA_bean
+																			.getRequestId(),
+																			30)) {
+																// No
+																// more
+																// extend
+																// is
+																// allowed.
+																return;
+															}
+															// Update
+															// the
+															// OBABean's
+															// endtime
+															// and
+															// duration
+															int new_remain_minutes = tmp_ref + 30;
+															final String durString = new_remain_minutes
+																	+ " minutes";
+															display.asyncExec(new Runnable() {
+
 																@Override
 																public void run() {
 																	// TODO
 																	// Auto-generated
 																	// method
 																	// stub
-																	if (!controller.VCLConnector
-																			.extendReservation(
-																					new_OBA_bean
-																							.getRequestId(),
-																					30)) {
-																		// No
-																		// more
-																		// extend
-																		// is
-																		// allowed.
-																		return;
-																	}
-																	// Update
-																	// the
-																	// OBABean's
-																	// endtime
-																	// and
-																	// duration
-																	int new_remain_minutes = tmp_ref + 30;
-																	final String durString = new_remain_minutes
-																			+ " minutes";
-																	display.asyncExec(new Runnable() {
-
-																		@Override
-																		public void run() {
-																			// TODO
-																			// Auto-generated
-																			// method
-																			// stub
-																			one_status_Item
-																					.setText(
-																							3,
-																							durString);
-																		}
-																	});
-
+																	one_status_Item
+																	.setText(
+																			3,
+																			durString);
 																}
-															}.start();
-														}
+															});
 
-														// Update the table item
-														// showing the
-														// remaining time.
-														String durString;
-														if (remain_minutes == 1) {
-															durString = remain_minutes
-																	+ " minute";
-														} else {
-															durString = remain_minutes
-																	+ " minutes";
 														}
-														one_status_Item
-																.setText(3,
-																		durString);
-														// Repeat
-														display.timerExec(
-																60000, this);
-													}
-												});
+													}.start();
+												}
+
+												// Update the table item
+												// showing the
+												// remaining time.
+												String durString;
+												if (remain_minutes == 1) {
+													durString = remain_minutes
+															+ " minute";
+												} else {
+													durString = remain_minutes
+															+ " minutes";
+												}
+												one_status_Item
+												.setText(3,
+														durString);
+												// Repeat
+												display.timerExec(
+														60000, this);
+											}
+										});
 									}
 								});
 
@@ -1322,5 +1362,47 @@ public class MainOBAGUI {
 		for (int i = 0; i < tmp_titleString.length; i++) {
 			statusTable.getColumn(i).pack();
 		}
+	}
+
+	void updateStatusOBATable() {
+		int i = 0;
+		for (i = 0; i < statusTable.getItemCount(); i++) {
+			final TableItem item = statusTable.getItem(i);
+			if (item.getText(8) != "") {
+				int selectedOBABeanRequestID = Integer.parseInt(item.getText(8));
+				final OBABean selectedBean = controller
+						.getOBABean(selectedOBABeanRequestID);
+				int old_status = selectedBean.getStatus();
+				// This step is used to check the status of the reservation
+				// It can be ignored if take too much time.
+				controller.VCLConnector.updateStatus(selectedBean);
+				if (selectedBean.getStatus() != old_status) {
+					display.asyncExec(new Runnable() {
+						public void run() {
+							switch (selectedBean.getStatus()) {
+							case OBABean.READY:
+								item.setText(status_Titles.get("Status"), "READY");
+								break;
+							case OBABean.LOADING:
+								item.setText(status_Titles.get("Status"), "LOADING");
+								break;
+							case OBABean.TIMEDOUT:
+								item.setText(status_Titles.get("Status"), "TIMEDOUT");
+								break;
+							case OBABean.FAILED:
+								item.setText(status_Titles.get("Status"), "FAILED");
+								break;
+							default:
+								item.setText(status_Titles.get("Status"),
+										"UNKNOWN STATUS");
+								break;
+							}
+						}
+					});
+				}
+			}
+
+		}
+
 	}
 }
