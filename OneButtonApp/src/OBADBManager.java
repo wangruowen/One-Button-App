@@ -1,3 +1,9 @@
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 
 public class OBADBManager {
@@ -15,7 +21,25 @@ public class OBADBManager {
 		}
 		return instance;
 	}
-
+	
+	public void initialize() {
+		try {
+			Class.forName("org.sqlite.JDBC");
+			Connection conn = DriverManager
+					.getConnection("jdbc:sqlite:test.db");
+			Statement stat = conn.createStatement();
+			DatabaseMetaData dbm = conn.getMetaData();
+			ResultSet rs1 = dbm.getTables(null, null, "image", null);
+			if (!rs1.next()) {
+				stat.executeUpdate("create table image (user_name VARCHAR(25) NOT NULL, image_id INTEGER, image_name VARCHAR(100), image_desc TEXT(200), login_mode INTEGER);");
+			}
+			conn.setAutoCommit(true);
+			conn.close();
+			rs1.close();
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+	}
 	/**
 	 * Write the password of user into the SQLite database return error if
 	 * having any error

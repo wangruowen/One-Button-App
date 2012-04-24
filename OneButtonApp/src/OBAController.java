@@ -40,6 +40,7 @@ public class OBAController {
 	 */
 	public void initialize() {
 		DBManager = OBADBManager.getInstance();
+		DBManager.initialize();
 
 		String[] savedUserInfos = DBManager.getRememberPasswd();
 		// HashMap<String, String> savedUserInfos =
